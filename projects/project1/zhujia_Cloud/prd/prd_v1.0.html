@@ -44,9 +44,9 @@
         }
         
         .brand { font-size: 18px; font-weight: 700; display: flex; align-items: center; gap: 10px; }
-        .brand-icon { width: 32px; height: 32px; background: var(--primary); color: #fff; display: flex; align-items: center; justify-content: center; border-radius: 6px; font-family: 'Times New Roman', serif; }
+        .brand-icon { width: 32px; height: 32px; background: var(--primary); color: #fff; display: flex; align-items: center; justify-content: center; border-radius: 6px; font-family: 'Times New Roman', serif; flex-shrink: 0; }
         .meta-info { display: flex; gap: 24px; font-size: 12px; color: var(--text-sub); }
-        .meta-item { display: flex; align-items: center; gap: 6px; }
+        .meta-item { display: flex; align-items: center; gap: 6px; white-space: nowrap; }
 
         /* 左右布局容器 */
         .layout-container {
@@ -284,21 +284,85 @@
 
         /* Mobile Responsiveness for Cloud PRD */
         @media (max-width: 768px) {
+            header {
+                flex-direction: column;
+                align-items: flex-start;
+                padding: 12px 16px;
+                height: auto;
+                gap: 8px;
+            }
+            .meta-info {
+                flex-wrap: wrap;
+                gap: 12px;
+            }
             .side-tab {
                 display: none; /* 手机端隐藏侧边抽屉按钮 */
             }
             .layout-container {
                 flex-direction: column;
             }
+            
+            /* 移动端目录改为抽屉式（默认隐藏，点击展开） */
             .sidebar {
+                position: fixed;
+                top: auto;
+                bottom: 0;
+                left: 0;
                 width: 100% !important;
-                height: auto;
-                max-height: 40vh;
-                position: relative;
+                height: 70vh;
+                max-height: none;
+                background: #fff;
+                z-index: 1000;
+                box-shadow: 0 -4px 20px rgba(0,0,0,0.1);
+                border-radius: 20px 20px 0 0;
+                transform: translateY(100%);
                 opacity: 1;
-                border-right: none;
-                border-bottom: 1px solid var(--border);
+                transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+                padding-top: 20px;
+                padding-bottom: 40px;
             }
+            
+            .sidebar.mobile-open {
+                transform: translateY(0);
+            }
+            
+            /* 移动端浮动菜单按钮 */
+            .mobile-menu-btn {
+                position: fixed;
+                bottom: 24px;
+                right: 24px;
+                width: 50px;
+                height: 50px;
+                background: var(--primary);
+                color: #fff;
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+                z-index: 999;
+                font-size: 24px;
+                cursor: pointer;
+            }
+            
+            /* 遮罩层 */
+            .mobile-overlay {
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background: rgba(0,0,0,0.5);
+                z-index: 990;
+                opacity: 0;
+                pointer-events: none;
+                transition: opacity 0.3s ease;
+            }
+            .mobile-overlay.active {
+                opacity: 1;
+                pointer-events: auto;
+            }
+
             .prototype-drawer, .prototype-drawer-content {
                 display: none !important; /* 手机端不显示固定的右侧原型抽屉 */
             }
@@ -314,9 +378,24 @@
             }
             table { min-width: 600px; } /* 确保表格不会过度挤压 */
             
+            /* 详细方案模块移动端上下布局：文字在上，原型在下 */
+            .feature-block {
+                flex-direction: column !important;
+                gap: 32px !important;
+            }
+            .feature-block > div:first-child {
+                width: 100% !important;
+                padding-right: 0 !important;
+            }
+            .feature-block > div:last-child {
+                width: 100% !important;
+                display: flex;
+                justify-content: center;
+            }
+            
             /* 调整正文中嵌入的手机原型缩放 */
             .feature-block .drawer-mockup {
-                transform: scale(min(0.8, calc((100vw - 40px) / 320)));
+                transform: scale(min(0.9, calc((100vw - 40px) / 320)));
             }
         }
         .nav-section { 
@@ -652,13 +731,21 @@
 <!-- state-sidebar-open by default -->
 <div class="layout-container state-sidebar-open" id="main-container">
     
+    <!-- 移动端遮罩层 -->
+    <div class="mobile-overlay" id="mobile-overlay" onclick="toggleMobileMenu()"></div>
+
+    <!-- 移动端浮动菜单按钮 -->
+    <div class="mobile-menu-btn md:hidden" onclick="toggleMobileMenu()">
+        <i class="ri-menu-line" id="mobile-menu-icon"></i>
+    </div>
+
     <!-- Left Tab (Directory) -->
     <div class="side-tab left-tab" id="left-tab" onclick="toggleSidebar()">
         目录
     </div>
 
     <!-- Navigation -->
-    <nav class="sidebar">
+    <nav class="sidebar" id="sidebar">
         <div class="nav-section">
             <a href="#section-info" class="nav-item active">📋 项目信息</a>
             <a href="#section-version" class="nav-item">📝 版本记录</a>
@@ -2810,8 +2897,8 @@
     </main>
     
         <!-- Right Tab (Prototype) -->
-        <div class="side-tab right-tab" id="right-tab" onclick="toggleGlobalPreview()">
-            原型
+        <div class="side-tab right-tab" id="right-tab" onclick="window.open('https://lanhuapp.com/url/7l0qO-08tXw', '_blank')">
+            体验原型
         </div>
 
         <!-- Preview Overlay (State C Drawer) -->
@@ -2837,6 +2924,33 @@
     const leftTab = document.getElementById('left-tab');
     const rightTab = document.getElementById('right-tab');
     
+    // Toggle mobile menu
+    function toggleMobileMenu() {
+        const sidebar = document.getElementById('sidebar');
+        const overlay = document.getElementById('mobile-overlay');
+        const icon = document.getElementById('mobile-menu-icon');
+        
+        sidebar.classList.toggle('mobile-open');
+        overlay.classList.toggle('active');
+        
+        if (sidebar.classList.contains('mobile-open')) {
+            icon.classList.remove('ri-menu-line');
+            icon.classList.add('ri-close-line');
+        } else {
+            icon.classList.remove('ri-close-line');
+            icon.classList.add('ri-menu-line');
+        }
+    }
+
+    // Close mobile menu when clicking a link
+    document.querySelectorAll('.sidebar .nav-item').forEach(link => {
+        link.addEventListener('click', () => {
+            if (window.innerWidth <= 768) {
+                toggleMobileMenu();
+            }
+        });
+    });
+
     // Toggle Sidebar
     function toggleSidebar() {
         if (container.classList.contains('state-sidebar-open')) {

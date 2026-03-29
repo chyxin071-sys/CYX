@@ -205,21 +205,6 @@
         .scrollable-content::-webkit-scrollbar { 
             display: none; 
         }
-        
-        .timeline-line {
-            position: absolute;
-            left: 1rem; /* For mobile: 更靠近边缘 */
-            top: 0;
-            bottom: 0;
-            width: 1px;
-            background-color: var(--line);
-            z-index: 0;
-        }
-        @media (min-width: 768px) {
-            .timeline-line {
-                left: 1.5rem; /* For desktop: 向左移动，拉开与文字的间距 */
-            }
-        }
 
         /* 图片与项目卡片 (取消灰度，改为微小的亮度/阴影交互) */
         .project-image {
@@ -389,12 +374,12 @@
             <!-- Right: Scrollable Timeline -->
             <div class="md:col-span-8 relative scrollable-content">
                 <!-- 将线条容器独立出来，并让其高度自适应内容 -->
-                <div class="relative pl-6 md:pl-16">
-                    <div class="timeline-line"></div>
+                <div class="relative">
+                    <div class="absolute left-[15.5px] md:left-[47.5px] top-0 bottom-0 w-[1px] bg-[var(--line)] z-0"></div>
                     
                     <!-- Timeline Item 1: 智元空间 实习 -->
-                    <div class="mb-32 relative z-10">
-                        <div class="absolute w-2 h-2 bg-[var(--text)] -left-[25px] md:-left-[57px] top-[10px]"></div>
+                    <div class="mb-32 relative z-10 pl-12 md:pl-40">
+                        <div class="absolute w-2 h-2 bg-[var(--text)] left-[12px] md:left-[44px] top-[10px]"></div>
                         <div class="flex items-baseline gap-4 mb-3">
                             <h4 class="text-2xl md:text-3xl font-bold font-zh">产品运营实习生</h4>
                             <span class="text-xs md:text-sm tracking-widest opacity-50 uppercase">Product Ops Intern</span>
@@ -408,8 +393,8 @@
                     </div>
 
                     <!-- Timeline Item 2: 暗壳科技 实习 -->
-                    <div class="mb-32 relative z-10">
-                        <div class="absolute w-2 h-2 bg-transparent border border-[var(--text)] -left-[25px] md:-left-[57px] top-[10px] bg-[var(--bg)]"></div>
+                    <div class="mb-32 relative z-10 pl-12 md:pl-40">
+                        <div class="absolute w-2 h-2 bg-transparent border border-[var(--text)] left-[12px] md:left-[44px] top-[10px] bg-[var(--bg)]"></div>
                         <div class="flex items-baseline gap-4 mb-3">
                             <h4 class="text-2xl md:text-3xl font-bold font-zh">内容运营实习生</h4>
                             <span class="text-xs md:text-sm tracking-widest opacity-50 uppercase">Content Ops Intern</span>
@@ -422,8 +407,8 @@
                     </div>
 
                     <!-- Timeline Item 3: NTU 硕士 -->
-                    <div class="mb-32 relative z-10">
-                        <div class="absolute w-2 h-2 bg-transparent border border-[var(--text)] -left-[25px] md:-left-[57px] top-[10px] bg-[var(--bg)]"></div>
+                    <div class="mb-32 relative z-10 pl-12 md:pl-40">
+                        <div class="absolute w-2 h-2 bg-transparent border border-[var(--text)] left-[12px] md:left-[44px] top-[10px] bg-[var(--bg)]"></div>
                         <div class="flex items-baseline gap-4 mb-3">
                             <h4 class="text-2xl md:text-3xl font-bold font-zh">国际工程管理 硕士</h4>
                             <span class="text-xs md:text-sm tracking-widest opacity-50 uppercase">MSc in ICM</span>
@@ -433,8 +418,8 @@
                     </div>
 
                     <!-- Timeline Item 4: 本科 -->
-                    <div class="mb-32 relative z-10">
-                        <div class="absolute w-2 h-2 bg-transparent border border-[var(--text)] -left-[25px] md:-left-[57px] top-[10px] bg-[var(--bg)]"></div>
+                    <div class="mb-32 relative z-10 pl-12 md:pl-40">
+                        <div class="absolute w-2 h-2 bg-transparent border border-[var(--text)] left-[12px] md:left-[44px] top-[10px] bg-[var(--bg)]"></div>
                         <div class="flex items-baseline gap-4 mb-3">
                             <h4 class="text-2xl md:text-3xl font-bold font-zh">建筑学 学士</h4>
                             <span class="text-xs md:text-sm tracking-widest opacity-50 uppercase">B.Arch</span>

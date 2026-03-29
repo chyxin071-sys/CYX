@@ -54,72 +54,69 @@
 
         /* 手机原型框架 - 默认状态（移动端不固定） */
         .phone-mockup-container {
-            position: relative;
+            width: 100%;
             display: flex;
             justify-content: center;
             align-items: center;
+            margin-top: 2rem;
             margin-bottom: 3rem;
-            margin-top: 1rem;
             z-index: 50;
-            width: 100%;
         }
 
         .phone-mockup {
-            /* 强制使用 1:2 比例 (例如 400x800) */
-            width: 400px;
-            height: 800px;
-            border-radius: 44px;
-            border: 12px solid var(--text);
+            /* 严格锁定 1:2 比例，绝不拉伸 */
+            aspect-ratio: 1 / 2;
+            /* 移动端以屏幕高度为基准，确保一屏内能完整显示，消除“细长感” */
+            height: 65vh;
+            max-height: 700px;
+            border-radius: 36px;
+            border: 10px solid var(--text);
             overflow: hidden;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+            box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.2);
             background-color: #121212;
             position: relative;
-            /* 移动端使用更合理的缩放比例，基于屏幕高度和宽度动态计算，保证完整显示且留有呼吸空间 */
-            transform: scale(min(0.7, calc(70vh / 800px))); 
-            transform-origin: center center; /* 移动端居中对齐 */
         }
 
-        /* 移动端高度容器适应缩放后的手机高度，并增加足够的上下间距 */
-        @media (max-width: 767px) {
-            .phone-mockup-container {
-                height: calc(800px * min(0.7, calc(70vh / 800px)));
-                margin-top: 1rem; /* 增加上方间距，不要和标题贴在一起 */
-                margin-bottom: 3rem; /* 增加下方间距 */
-            }
-        }
-
-        /* 桌面端改为固定悬浮 */
+        /* 桌面端改为固定悬浮，恢复大尺寸 */
         @media (min-width: 768px) {
             .phone-mockup-container {
                 position: fixed;
                 top: 12vh;
                 right: 10%;
-                justify-content: flex-end;
-                margin-bottom: 0;
                 width: auto;
-                height: auto;
+                margin: 0;
             }
             .phone-mockup {
-                transform: scale(0.69); /* 桌面端恢复原设定缩放 */
-                transform-origin: top right; /* 桌面端靠右对齐 */
+                height: 75vh;
+                border-radius: 44px;
+                border-width: 12px;
             }
             .prd-content {
                 width: 75%;
                 padding-right: 4rem;
             }
         }
-        /* 刘海屏/灵动岛 (iPhone 16 比例) */
+        
+        /* 刘海屏/灵动岛 */
         .phone-mockup::before {
             content: '';
             position: absolute;
-            top: 10px;
+            top: 8px;
             left: 50%;
             transform: translateX(-50%);
-            width: 120px;
-            height: 35px;
+            width: 30%; /* 使用百分比，适配缩放 */
+            height: 24px;
             background-color: var(--text);
-            border-radius: 20px;
+            border-radius: 12px;
             z-index: 20;
+        }
+        @media (min-width: 768px) {
+            .phone-mockup::before {
+                width: 120px;
+                height: 35px;
+                top: 10px;
+                border-radius: 20px;
+            }
         }
     </style>
 </head>

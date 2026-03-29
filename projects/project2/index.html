@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>新能源汽车座舱设计 - Project Details</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Noto+Sans+SC:wght@300;400;500;700;900&family=Playfair+Display:ital@0;1&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: oklch(0.96 0.01 75); 
+            --text: oklch(0.2 0.02 75); 
+            --accent: oklch(0.6 0.1 30); 
+            --line: rgba(0,0,0,0.1);
+        }
+        body {
+            background-color: var(--bg);
+            color: var(--text);
+            font-family: 'Space Grotesk', 'Noto Sans SC', sans-serif;
+            overflow-x: hidden;
+        }
+        .font-zh { font-family: 'Noto Sans SC', sans-serif; }
+        
+        .back-nav {
+            position: fixed;
+            top: 2rem;
+            left: 3rem;
+            z-index: 100;
+            font-size: 0.8rem;
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            font-weight: 500;
+        }
+        .back-nav a {
+            color: var(--text);
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            opacity: 0.6;
+            transition: opacity 0.3s ease;
+        }
+        .back-nav a:hover { opacity: 1; }
+
+        .iframe-container {
+            width: 100%;
+            height: 90vh;
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid var(--line);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.05);
+        }
+    </style>
+</head>
+<body class="px-6 md:px-12 max-w-[1800px] mx-auto py-12">
+
+    <header class="max-w-4xl mb-16">
+        <div class="mb-6 text-xs font-mono tracking-[0.3em] uppercase opacity-50">Project 02 / HMI Design</div>
+        <h1 class="text-5xl md:text-6xl font-bold mb-6 font-zh">新能源汽车座舱网页设计</h1>
+        <p class="text-xl leading-relaxed opacity-80 font-light border-l-2 border-[var(--text)] pl-6">
+            基于 Vite + React 开发的网页端交互演示，呈现蔚来品牌智能座舱体验研究与设计优化方案。
+        </p>
+    </header>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-12 mb-16">
+        <div class="col-span-1">
+            <h3 class="text-sm font-bold tracking-widest uppercase mb-4 opacity-50 border-b border-[var(--line)] pb-2">Tech Stack</h3>
+            <ul class="space-y-2 opacity-80 text-sm">
+                <li>React / Vite</li>
+                <li>Tailwind CSS</li>
+                <li>HMI UX Research</li>
+            </ul>
+        </div>
+        <div class="col-span-2">
+            <h3 class="text-sm font-bold tracking-widest uppercase mb-4 opacity-50 border-b border-[var(--line)] pb-2">Experience Overview</h3>
+            <p class="leading-relaxed opacity-80 text-sm font-light">
+                由于该项目本身是一个完整的现代前端单页应用（SPA），为了保证最佳的动效和交互体验，我们直接将该项目的构建产物或开发服务器链接嵌入在下方。您可以在此框架内直接体验座舱交互的逻辑。
+            </p>
+        </div>
+    </div>
+
+    <!-- 运行的 React 项目嵌入 (假设用户稍后会打包该项目并放到对应目录，或者我们可以通过链接指向) -->
+    <div class="mb-32">
+        <div class="flex justify-between items-end mb-6">
+            <h3 class="text-2xl font-bold font-zh">Live Demo (React App)</h3>
+            <a href="新能源汽车座舱网页设计/dist/index.html" target="_blank" class="text-sm tracking-widest uppercase border-b border-[var(--text)] pb-1 hover:opacity-50">全屏打开体验 -></a>
+        </div>
+        
+        <div class="iframe-container bg-white relative">
+            <!-- 提示信息：如果直接访问静态文件跨域报错，提示用户 -->
+            <div class="absolute inset-0 flex items-center justify-center bg-gray-50 -z-10 text-gray-400 text-sm font-mono">
+                Loading React Application... <br>
+                (Note: Vite projects usually require running 'npm run build' and serving the 'dist' folder)
+            </div>
+            <!-- 指向该项目打包后的 index.html (通常在 dist 目录下，目前先指向其根目录下的可能入口) -->
+            <iframe src="新能源汽车座舱网页设计/dist/index.html" width="100%" height="100%" frameborder="0" class="z-10 relative bg-white"></iframe>
+        </div>
+    </div>
+
+</body>
+</html>

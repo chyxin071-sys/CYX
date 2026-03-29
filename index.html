@@ -1,0 +1,922 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Portfolio - The Hybrid Edition</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Noto+Sans+SC:wght@300;400;500;700;900&family=Playfair+Display:ital@0;1&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            /* V2的纸张白和深褐黑，带来高级感 */
+            --bg: oklch(0.96 0.01 75); 
+            --text: oklch(0.2 0.02 75); 
+            --accent: oklch(0.6 0.1 30); 
+            /* V1的建筑线框 */
+            --line: rgba(0,0,0,0.1);
+        }
+        
+        /* 全局隐藏滚动条但保留滚动功能 */
+        ::-webkit-scrollbar {
+            display: none;
+        }
+        * {
+            -ms-overflow-style: none;  /* IE and Edge */
+            scrollbar-width: none;  /* Firefox */
+        }
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        
+        /* CSS Scroll Snapping - 优化高级柔和顿感 */
+        html, body {
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg);
+            color: var(--text);
+            font-family: 'Space Grotesk', 'Noto Sans SC', sans-serif;
+            overflow-x: hidden;
+            height: 100vh;
+            overflow-y: scroll;
+            /* 改用 proximity 配合平滑滚动，或者保持 mandatory 但调整子元素的过渡 */
+            scroll-snap-type: y mandatory;
+            scroll-behavior: smooth;
+        }
+
+        .font-zh { font-family: 'Noto Sans SC', sans-serif; }
+        .font-serif { font-family: 'Playfair Display', serif; }
+        
+        /* 极简右上角导航栏 */
+        .top-nav {
+            position: fixed;
+            top: 2rem;
+            right: 3rem;
+            z-index: 100;
+            display: flex;
+            gap: 2.5rem;
+            font-size: 0.8rem;
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            font-weight: 500;
+        }
+        .top-nav a {
+            color: var(--text);
+            text-decoration: none;
+            position: relative;
+            padding-bottom: 4px;
+            opacity: 0.6;
+            transition: opacity 0.3s ease;
+        }
+        .top-nav a:hover, .top-nav a.active {
+            opacity: 1;
+        }
+        .top-nav a::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 0;
+            height: 1px;
+            background-color: var(--text);
+            transition: width 0.3s ease;
+        }
+        .top-nav a.active::after, .top-nav a:hover::after {
+            width: 100%;
+        }
+
+        /* 建筑网格线 */
+        .grid-line-bottom { border-bottom: 1px solid var(--line); }
+        .grid-line-top { border-top: 1px solid var(--line); }
+        .grid-line-right { border-right: 1px solid var(--line); }
+
+        /* Full height sections with Snap */
+        .section-full {
+            min-height: 100vh;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            position: relative;
+            scroll-snap-align: start;
+            scroll-snap-stop: always; /* 强制停留在每一页，产生明确的顿感 */
+            padding-top: 2rem;
+            
+            /* 页面显现的渐变效果：结合 Intersection Observer 使用 */
+            opacity: 0;
+            transform: translateY(30px);
+            transition: opacity 1.2s cubic-bezier(0.22, 1, 0.36, 1), transform 1.2s cubic-bezier(0.22, 1, 0.36, 1);
+        }
+        
+        /* 当页面进入视口时的状态 */
+        .section-full.is-visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* Journey Section Specific Styles */
+        .journey-container {
+            height: 100vh;
+            display: flex;
+            align-items: flex-start;
+            overflow: hidden; /* 防止溢出干扰snap */
+        }
+        .sticky-sidebar {
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+        .scrollable-content {
+            height: 100vh;
+            overflow-y: auto;
+            padding-top: 30vh; /* 让第一项垂直居中一些 */
+            padding-bottom: 30vh;
+            position: relative;
+            /* 隐藏滚动条但允许滚动 */
+            -ms-overflow-style: none;  
+            scrollbar-width: none;  
+        }
+        .scrollable-content::-webkit-scrollbar { 
+            display: none; 
+        }
+        .timeline-line {
+            position: absolute;
+            left: 3rem; /* 对应 pl-12 的距离 */
+            top: 0;
+            bottom: 0;
+            width: 1px;
+            background-color: var(--line);
+            z-index: 0;
+        }
+
+        /* 图片与项目卡片 (取消灰度，改为微小的亮度/阴影交互) */
+        .project-image {
+            position: relative;
+            overflow: hidden;
+            transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.03);
+        }
+        .project-image img {
+            transition: transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .project-image:hover {
+            box-shadow: 0 20px 40px rgba(0,0,0,0.12);
+        }
+        .project-image:hover img {
+            transform: scale(1.03);
+        }
+
+        .timeline-line {
+            position: absolute;
+            left: 0; top: 0; bottom: 0;
+            width: 1px;
+            background: var(--line);
+        }
+
+        /* Scroll Indicator */
+        .scroll-indicator {
+            position: absolute;
+            bottom: 2rem;
+            left: 3rem;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.2em;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            text-decoration: none;
+            color: var(--text);
+            opacity: 0.6;
+            transition: opacity 0.3s;
+        }
+        .scroll-indicator:hover { opacity: 1; }
+        .scroll-line {
+            width: 40px;
+            height: 1px;
+            background-color: var(--text);
+            animation: line-stretch 2s infinite;
+            transform-origin: left;
+        }
+        @keyframes line-stretch {
+            0% { transform: scaleX(0.2); }
+            50% { transform: scaleX(1); }
+            100% { transform: scaleX(0.2); }
+        }
+
+        /* 小红书卡片特效 */
+        .xhs-card {
+            border-radius: 12px;
+            overflow: hidden;
+            background: white;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+            transition: transform 0.4s ease, box-shadow 0.4s ease;
+        }
+        .xhs-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 12px 30px rgba(0,0,0,0.1);
+        }
+
+        /* 模态框 (Modal) 样式 */
+        .project-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background-color: var(--bg);
+            z-index: 1000;
+            transform: translateY(100%);
+            transition: transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+            display: flex;
+            flex-direction: column;
+        }
+        .project-modal.active {
+            transform: translateY(0);
+        }
+        .modal-header {
+            padding: 2rem 3rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--line);
+            background-color: var(--bg);
+            z-index: 10;
+        }
+        .modal-close-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 0.8rem;
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            font-family: 'Space Grotesk', sans-serif;
+            color: var(--text);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            opacity: 0.6;
+            transition: opacity 0.3s;
+        }
+        .modal-close-btn:hover {
+            opacity: 1;
+        }
+        .modal-content {
+            flex: 1;
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+        /* 禁用主页面滚动 */
+        body.modal-open {
+            overflow: hidden;
+        }
+    </style>
+</head>
+<body class="px-6 md:px-12 max-w-[1800px] mx-auto">
+
+    <!-- 极简右上角导航 -->
+    <nav class="top-nav">
+        <a href="#home" class="active">Index</a>
+        <a href="#journey">Journey</a>
+        <a href="#works">Works</a>
+        <a href="#awards">Awards</a>
+        <a href="#media">Media</a>
+        <a href="#about">About</a>
+    </nav>
+
+    <!-- Header / Hero (V1 排版 + V2 颜色) -->
+    <section id="home" class="section-full grid-line-bottom">
+        <div class="grid grid-cols-1 md:grid-cols-12 gap-8 w-full">
+            <div class="md:col-span-8 flex flex-col justify-center">
+                <div class="mb-6 text-xs font-mono tracking-[0.3em] uppercase opacity-50">PORTFOLIO // 2024</div>
+                <h1 class="font-bold leading-[1.1] tracking-tighter mb-8 font-zh">
+                    <span class="text-3xl md:text-4xl opacity-70 font-light block mb-2">您好，我是</span>
+                    <span class="font-serif italic font-light text-6xl md:text-[7rem] block mt-4">陈于昕.</span>
+                </h1>
+                <h2 class="text-xl md:text-2xl font-mono mb-8 opacity-60 tracking-wide uppercase">Spatial Thinker & Interaction Designer</h2>
+                <!-- 调整字体大小的类名在这里： text-sm (手机端偏小) md:text-base (电脑端正常偏小) -->
+                <p class="text-sm md:text-base max-w-2xl leading-relaxed opacity-80 font-light border-l border-[var(--text)] pl-6">
+                    建筑学背景出身，能够将空间思维、用户体验洞察与系统化项目管理能力，迁移到产品与运营领域，能快速理解复杂业务并拆解为可执行方案；对前沿 AI 技术保持高度敏锐，拥有从 0 到 1 完成 AI 原生应用需求调研、设计、敏捷开发与业务闭环的能力，擅长将底层 AI 技术转化为极致的用户交互体验。
+                </p>
+            </div>
+            <div class="md:col-span-4 h-[40vh] md:h-[60vh] mt-8 md:mt-0 relative flex items-end justify-end">
+                <div class="w-[80%] h-[90%] project-image bg-gray-200 aspect-[3/4]">
+                    <img src="assets/images/profile.jpg" onerror="this.src='https://images.unsplash.com/photo-1503614472-8c93d56e92ce?q=80&w=1000&auto=format&fit=crop'" class="w-full h-full object-cover" alt="陈于昕的照片">
+                </div>
+            </div>
+        </div>
+        
+        <a href="#journey" class="scroll-indicator">
+            <span>Scroll</span>
+            <div class="scroll-line"></div>
+        </a>
+    </section>
+
+    <!-- Experience Timeline (修复了重叠问题，独立内部滚动) -->
+    <section id="journey" class="section-full grid-line-bottom">
+        <div class="grid md:grid-cols-12 gap-12 journey-container">
+            <!-- Left: Sticky Title (居中对齐) -->
+            <div class="md:col-span-4 sticky-sidebar pr-8">
+                <h2 class="text-xs tracking-[0.3em] uppercase mb-4 opacity-50">01 // Foundation</h2>
+                <h3 class="text-5xl md:text-6xl mb-6 font-bold font-zh">个人旅程</h3>
+                <p class="opacity-60 leading-relaxed text-lg font-light">从物理实体建筑到数字虚拟界面的跨界探索。向下滚动查看完整经历。</p>
+            </div>
+            
+            <!-- Right: Scrollable Timeline -->
+            <div class="md:col-span-8 relative scrollable-content">
+                <!-- 将线条容器独立出来，并让其高度自适应内容 -->
+                <div class="relative pl-12">
+                    <div class="timeline-line"></div>
+                    
+                    <!-- Timeline Item 1: 智元空间 实习 -->
+                    <div class="mb-32 relative z-10">
+                        <div class="absolute w-2 h-2 bg-[var(--text)] -left-[49px] top-[10px]"></div>
+                        <div class="flex items-baseline gap-4 mb-3">
+                            <h4 class="text-3xl font-bold font-zh">产品运营实习生</h4>
+                            <span class="text-sm tracking-widest opacity-50 uppercase">Product Ops Intern</span>
+                        </div>
+                        <p class="text-lg mb-6 opacity-80 font-medium">杭州智元空间科技有限公司 / 2025.11 — 2026.04</p>
+                        <div class="leading-relaxed opacity-70 max-w-2xl font-light space-y-2">
+                            <p><strong>运营提效：</strong>负责官方宣发渠道的体系化建设与存量账号激活。建立SOP与数据监测报表，实现账号增长效能超700%的显著提升。</p>
+                            <p><strong>业务优化：</strong>精准定位用户痛点，输出竞品调研报告并推动研发端重构产品流程，显著降低了非专业用户的系统准入门槛。</p>
+                            <p><strong>海外出海：</strong>统筹海外渠道搭建，制定内容本地化发布SOP，保障出海业务初期的合规性与品牌稳定曝光。</p>
+                        </div>
+                    </div>
+
+                    <!-- Timeline Item 2: 暗壳科技 实习 -->
+                    <div class="mb-32 relative z-10">
+                        <div class="absolute w-2 h-2 bg-transparent border border-[var(--text)] -left-[49px] top-[10px] bg-[var(--bg)]"></div>
+                        <div class="flex items-baseline gap-4 mb-3">
+                            <h4 class="text-3xl font-bold font-zh">内容运营实习生</h4>
+                            <span class="text-sm tracking-widest opacity-50 uppercase">Content Ops Intern</span>
+                        </div>
+                        <p class="text-lg mb-6 opacity-80 font-medium">暗壳科技（深圳）有限公司 / 2025.09 — 2025.11</p>
+                        <div class="leading-relaxed opacity-70 max-w-2xl font-light space-y-2">
+                            <p>独立负责平台新媒体账号内容策划，通过数据驱动优化，使月度平均曝光量提升30%。</p>
+                            <p>作为产品体验官深度参与新功能内测，通过用户访谈与问卷调研系统梳理体验痛点，撰写产品优化报告，累计输出5条结构化产品改进建议，向技术团队清晰传递用户声音。</p>
+                        </div>
+                    </div>
+
+                    <!-- Timeline Item 3: NTU 硕士 -->
+                    <div class="mb-32 relative z-10">
+                        <div class="absolute w-2 h-2 bg-transparent border border-[var(--text)] -left-[49px] top-[10px] bg-[var(--bg)]"></div>
+                        <div class="flex items-baseline gap-4 mb-3">
+                            <h4 class="text-3xl font-bold font-zh">国际工程管理 硕士</h4>
+                            <span class="text-sm tracking-widest opacity-50 uppercase">MSc in ICM</span>
+                        </div>
+                        <p class="text-lg mb-6 opacity-80 font-medium">南洋理工大学 (NTU) / 2025.08 — 2026.07</p>
+                        <p class="leading-relaxed opacity-70 max-w-2xl font-light">相关课程：工程管理，价值工程与质量管理，国际工程合同与法规，项目规划与控制技术，建筑信息技术，人机交互理论与实践。 </p>
+                    </div>
+
+                    <!-- Timeline Item 4: 本科 -->
+                    <div class="mb-32 relative z-10">
+                        <div class="absolute w-2 h-2 bg-transparent border border-[var(--text)] -left-[49px] top-[10px] bg-[var(--bg)]"></div>
+                        <div class="flex items-baseline gap-4 mb-3">
+                            <h4 class="text-3xl font-bold font-zh">建筑学 学士</h4>
+                            <span class="text-sm tracking-widest opacity-50 uppercase">B.Arch</span>
+                        </div>
+                        <p class="text-lg mb-6 opacity-80 font-medium">中国石油大学（华东） / 2020.09 — 2025.07</p>
+                        <div class="leading-relaxed opacity-70 max-w-2xl font-light space-y-2">
+                            <p><strong>GPA: 85.4/100</strong>。荣获校级综合一等奖学金，校级社会工作奖学金，“中国好创意”国家二等奖，优秀学生，优秀共青团干部等荣誉。</p>
+                            <p>相关课程：建筑设计，建筑节能技术，建筑数字技术，绿色建筑概论，城市设计，建筑物理。</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Projects Section (Project 1 - 网页/大屏端) -->
+    <section id="works" class="section-full">
+        <div class="flex justify-between items-end mb-16 grid-line-bottom pb-8">
+            <div>
+                <h2 class="text-xs tracking-[0.3em] uppercase mb-4 opacity-50">02 // The Archive</h2>
+                <h3 class="text-5xl md:text-6xl font-bold font-zh">精选作品</h3>
+            </div>
+            <div class="text-right pb-2">
+                <span class="text-4xl font-light font-serif">1</span><span class="opacity-30">/4</span>
+            </div>
+        </div>
+        
+        <!-- 横向长图排版 (适合网页/SaaS/大屏) -->
+        <div class="grid md:grid-cols-12 gap-12 items-center h-full pb-20">
+            <div class="md:col-span-8 h-[60vh]">
+                <div class="w-full h-full project-image rounded-xl cursor-pointer" onclick="openModal('projects/project1/index.html')">
+                    <img src="assets/images/project1_cover.jpg" onerror="this.src='https://images.unsplash.com/photo-1460925895917-afdab827c52f?q=80&w=1600&auto=format&fit=crop'" class="w-full h-full object-cover" alt="传统家装行业数字化全链路解决方案">
+                </div>
+            </div>
+            <div class="md:col-span-4">
+                <p class="tracking-[0.2em] uppercase text-xs mb-6 opacity-50">B2B Solution / Product Design</p>
+                <h4 class="text-3xl font-bold mb-6 font-zh leading-tight">传统家装行业<br>数字化全链路解决方案</h4>
+                <p class="leading-relaxed opacity-70 mb-10 font-light">针对小型家装公司的痛点进行深度需求洞察，提供从营销获客到内部管理的完整数字化解决方案，包含三款核心产品设计。</p>
+                <button onclick="openModal('projects/project1/index.html')" class="inline-block border-b border-[var(--text)] pb-1 hover:opacity-50 transition-opacity text-sm tracking-[0.2em] uppercase cursor-pointer">查看详情 -></button>
+            </div>
+        </div>
+    </section>
+
+    <!-- Project 2 (网页/车机端) -->
+    <section class="section-full">
+        <div class="flex justify-between items-end mb-16 grid-line-bottom pb-8">
+            <div>
+                <h3 class="text-5xl md:text-6xl font-bold font-zh opacity-0">精选作品</h3>
+            </div>
+            <div class="text-right pb-2">
+                <span class="text-4xl font-light font-serif">2</span><span class="opacity-30">/4</span>
+            </div>
+        </div>
+
+        <!-- 文字在左，横向长图在右 -->
+        <div class="grid md:grid-cols-12 gap-12 items-center h-full pb-20 flex-col-reverse md:flex-row">
+            <div class="md:col-span-4">
+                <p class="tracking-[0.2em] uppercase text-xs mb-6 opacity-50">HMI Design / Research Report</p>
+                <h4 class="text-3xl font-bold mb-6 font-zh leading-tight">蔚来 NIO 智能座舱<br>体验与演进趋势研究</h4>
+                <p class="leading-relaxed opacity-70 mb-10 font-light">探讨智能座舱从“驾驶工具”到“移动生活空间”的范式转变，探索未来出行语境下“车服务人”的情感化连接设计。</p>
+                <a href="https://glow-rose-43881094.figma.site" target="_blank" class="inline-block border-b border-[var(--text)] pb-1 hover:opacity-50 transition-opacity text-sm tracking-[0.2em] uppercase cursor-pointer">查看详情 -></a>
+            </div>
+            <div class="md:col-span-8 h-[60vh]">
+                <a href="https://glow-rose-43881094.figma.site" target="_blank" class="block w-full h-full project-image rounded-xl cursor-pointer">
+                    <img src="assets/images/project2_cover.jpg" onerror="this.src='https://images.unsplash.com/photo-1549317661-bd32c8ce0db2?q=80&w=1600&auto=format&fit=crop'" class="w-full h-full object-cover" alt="蔚来 NIO 智能座舱设计">
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Project 3 (移动端 App) -->
+    <section class="section-full">
+        <div class="flex justify-between items-end mb-16 grid-line-bottom pb-8">
+            <div>
+                <h3 class="text-5xl md:text-6xl font-bold font-zh opacity-0">精选作品</h3>
+            </div>
+            <div class="text-right pb-2">
+                <span class="text-4xl font-light font-serif">3</span><span class="opacity-30">/4</span>
+            </div>
+        </div>
+
+        <!-- 横向长图排版 (适合网页/SaaS/大屏) -->
+        <div class="grid md:grid-cols-12 gap-12 items-center h-full pb-20">
+            <div class="md:col-span-8 h-[60vh]">
+                <div class="w-full h-full project-image rounded-xl cursor-pointer" onclick="openModal('projects/project3/index.html')">
+                    <img src="assets/images/project3_cover.jpg" onerror="this.src='https://images.unsplash.com/photo-1616469829581-73993eb86b02?q=80&w=1600&auto=format&fit=crop'" class="w-full h-full object-cover" alt="FitBox 盲盒轻健身打卡">
+                </div>
+            </div>
+            <div class="md:col-span-4">
+                <p class="tracking-[0.2em] uppercase text-xs mb-6 opacity-50">Mobile App / Gamification</p>
+                <h4 class="text-3xl font-bold mb-6 font-zh leading-tight">FitBox 盲盒轻健身打卡</h4>
+                <p class="leading-relaxed opacity-70 mb-10 font-light">一款主打“盲盒式任务”与“极简记录”的轻量化健身打卡 App。解决决策疲劳与记录繁琐的痛点，用视觉多巴胺培养用户的长期运动习惯。</p>
+                <button onclick="openModal('projects/project3/index.html')" class="inline-block border-b border-[var(--text)] pb-1 hover:opacity-50 transition-opacity text-sm tracking-[0.2em] uppercase cursor-pointer">查看详情 -></button>
+            </div>
+        </div>
+    </section>
+
+    <!-- Project 4 (移动端 App) -->
+    <section class="section-full">
+        <div class="flex justify-between items-end mb-16 grid-line-bottom pb-8">
+            <div>
+                <h3 class="text-5xl md:text-6xl font-bold font-zh opacity-0">精选作品</h3>
+            </div>
+            <div class="text-right pb-2">
+                <span class="text-4xl font-light font-serif">4</span><span class="opacity-30">/4</span>
+            </div>
+        </div>
+
+        <!-- 文字在左，横向长图在右 -->
+        <div class="grid md:grid-cols-12 gap-12 items-center h-full pb-20 flex-col-reverse md:flex-row">
+            <div class="md:col-span-4">
+                <p class="tracking-[0.2em] uppercase text-xs mb-6 opacity-50">Mobile App / Lifestyle App</p>
+                <h4 class="text-3xl font-bold mb-6 font-zh leading-tight">个人生活轨迹管家</h4>
+                <p class="leading-relaxed opacity-70 mb-10 font-light">一款集成地图打卡、日常记录与数据汇总的个人生活管理工具，采用现代化UI组件库打造流畅体验。</p>
+                <button onclick="openModal('projects/project4/index.html')" class="inline-block border-b border-[var(--text)] pb-1 hover:opacity-50 transition-opacity text-sm tracking-[0.2em] uppercase cursor-pointer">查看详情 -></button>
+            </div>
+            <div class="md:col-span-8 h-[60vh]">
+                <div class="w-full h-full project-image rounded-xl cursor-pointer" onclick="openModal('projects/project4/index.html')">
+                    <img src="assets/images/project4_cover.jpg" onerror="this.src='https://images.unsplash.com/photo-1512941937669-90a1b58e7e9c?q=80&w=1600&auto=format&fit=crop'" class="w-full h-full object-cover" alt="个人生活轨迹管家">
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Awards Section (New) -->
+    <section id="awards" class="section-full grid-line-top justify-center">
+        <div class="grid md:grid-cols-12 gap-16 items-start h-full pt-12">
+            <!-- 左侧：奖项标题与列表 (加宽至 col-span-5，允许滑动) -->
+            <div class="md:col-span-5 h-[80vh] overflow-y-auto no-scrollbar pr-4 pb-32">
+                <div class="sticky top-0 bg-[var(--bg)] pt-4 pb-4 z-20">
+                    <h2 class="text-xs tracking-[0.3em] uppercase mb-6 opacity-50">03 // Honors & Awards</h2>
+                    <h3 class="text-5xl font-bold font-zh">奖项荣誉</h3>
+                </div>
+                
+                <div class="space-y-8 font-zh border-l border-[var(--text)] pl-6 relative z-0 mt-8">
+                    <div>
+                        <div class="text-xs font-mono opacity-50 mb-1">2024.5</div>
+                        <h4 class="text-lg font-bold">国家二等奖</h4>
+                        <p class="text-sm opacity-70 mt-1">中国好创意暨全国数字艺术设计大赛</p>
+                    </div>
+        
+                    <div>
+                        <div class="text-xs font-mono opacity-50 mb-1">2024.8</div>
+                        <h4 class="text-lg font-bold">省级二等奖</h4>
+                        <p class="text-sm opacity-70 mt-1">米兰设计周中国高校设计学科师生优秀作品展</p>
+                    </div>
+                    <div>
+                        <div class="text-xs font-mono opacity-50 mb-1">2024.11</div>
+                        <h4 class="text-lg font-bold">铜奖</h4>
+                        <p class="text-sm opacity-70 mt-1">香港新锐当代设计奖</p>
+                    </div>
+                    <div>
+                        <div class="text-xs font-mono opacity-50 mb-1">2022.8</div>
+                        <h4 class="text-lg font-bold">省级三等奖</h4>
+                        <p class="text-sm opacity-70 mt-1">青岛市历史与风貌建筑保护更新方案设计竞赛</p>
+                    </div>
+                    <div>
+                        <div class="text-xs font-mono opacity-50 mb-1">2024.12</div>
+                        <h4 class="text-lg font-bold">校级综合一等奖学金</h4>
+                        <p class="text-sm opacity-70 mt-1">中国石油大学（华东）</p>
+                    </div>
+                    <!-- Placeholder for more awards to demonstrate scrolling -->
+                    <div>
+                        <div class="text-xs font-mono opacity-50 mb-1">2024.12</div>
+                        <h4 class="text-lg font-bold">校级社会工作奖学金</h4>
+                        <p class="text-sm opacity-70 mt-1">中国石油大学（华东）</p>
+                    </div>
+                    <!-- 占位奖项 (新增7个) -->
+                    <div>
+                        <div class="text-xs font-mono opacity-50 mb-1">2022、2023、2024</div>
+                        <h4 class="text-lg font-bold">校级优秀学生</h4>
+                        <p class="text-sm opacity-70 mt-1">中国石油大学（华东）</p>
+                    </div>
+                    <div>
+                        <div class="text-xs font-mono opacity-50 mb-1">2022、2023</div>
+                        <h4 class="text-lg font-bold">新闻宣传先进个人</h4>
+                        <p class="text-sm opacity-70 mt-1">中国石油大学（华东）</p>
+                    </div>
+                    <div>
+                        <div class="text-xs font-mono opacity-50 mb-1">2022.12</div>
+                        <h4 class="text-lg font-bold">校级综合二等奖学金</h4>
+                        <p class="text-sm opacity-70 mt-1">中国石油大学（华东）</p>
+                    </div>
+                    <div>
+                        <div class="text-xs font-mono opacity-50 mb-1">2023.12</div>
+                        <h4 class="text-lg font-bold">校级综合三等奖学金</h4>
+                        <p class="text-sm opacity-70 mt-1">中国石油大学（华东）</p>
+                    </div>
+                    <div>
+                        <div class="text-xs font-mono opacity-50 mb-1">2022.5</div>
+                        <h4 class="text-lg font-bold">优秀共青团干部</h4>
+                        <p class="text-sm opacity-70 mt-1">中国石油大学（华东）</p>
+                    </div>
+                    <div>
+                        <div class="text-xs font-mono opacity-50 mb-1">2024.12</div>
+                        <h4 class="text-lg font-bold">校级文体奖学金</h4>
+                        <p class="text-sm opacity-70 mt-1">中国石油大学（华东）</p>
+                    </div>
+                   
+                </div>
+            </div>
+
+            <!-- 右侧：奖状瀑布流展示 -->
+            <div class="md:col-span-7 h-[80vh] overflow-y-auto no-scrollbar pb-32">
+                <div class="columns-2 md:columns-3 gap-4 space-y-4">
+                    <div class="break-inside-avoid rounded-lg overflow-hidden bg-[var(--text)]/5 hover:scale-[1.02] transition-transform duration-500 cursor-pointer">
+                        <img src="assets/images/award1.jpg" class="w-full h-auto object-cover opacity-90 hover:opacity-100 transition-opacity" alt="Award 1">
+                    </div>
+                    <div class="break-inside-avoid rounded-lg overflow-hidden bg-[var(--text)]/5 hover:scale-[1.02] transition-transform duration-500 cursor-pointer">
+                        <img src="assets/images/award2.jpg" class="w-full h-auto object-cover opacity-90 hover:opacity-100 transition-opacity" alt="Award 2">
+                    </div>
+                    <div class="break-inside-avoid rounded-lg overflow-hidden bg-[var(--text)]/5 hover:scale-[1.02] transition-transform duration-500 cursor-pointer">
+                        <img src="assets/images/award3.jpg" class="w-full h-auto object-cover opacity-90 hover:opacity-100 transition-opacity" alt="Award 3">
+                    </div>
+                    <div class="break-inside-avoid rounded-lg overflow-hidden bg-[var(--text)]/5 hover:scale-[1.02] transition-transform duration-500 cursor-pointer">
+                        <img src="assets/images/award4.jpg" class="w-full h-auto object-cover opacity-90 hover:opacity-100 transition-opacity" alt="Award 4">
+                    </div>
+                    <div class="break-inside-avoid rounded-lg overflow-hidden bg-[var(--text)]/5 hover:scale-[1.02] transition-transform duration-500 cursor-pointer">
+                        <img src="assets/images/award5.jpg" class="w-full h-auto object-cover opacity-90 hover:opacity-100 transition-opacity" alt="Award 5">
+                    </div>
+                    <div class="break-inside-avoid rounded-lg overflow-hidden bg-[var(--text)]/5 hover:scale-[1.02] transition-transform duration-500 cursor-pointer">
+                        <img src="assets/images/award6.jpg" class="w-full h-auto object-cover opacity-90 hover:opacity-100 transition-opacity" alt="Award 6">
+                    </div>
+                    <div class="break-inside-avoid rounded-lg overflow-hidden bg-[var(--text)]/5 hover:scale-[1.02] transition-transform duration-500 cursor-pointer">
+                        <img src="assets/images/award7.jpg" class="w-full h-auto object-cover opacity-90 hover:opacity-100 transition-opacity" alt="Award 7">
+                    </div>
+                    <div class="break-inside-avoid rounded-lg overflow-hidden bg-[var(--text)]/5 hover:scale-[1.02] transition-transform duration-500 cursor-pointer">
+                        <img src="assets/images/award8.jpg" class="w-full h-auto object-cover opacity-90 hover:opacity-100 transition-opacity" alt="Award 8">
+                    </div>
+                    <div class="break-inside-avoid rounded-lg overflow-hidden bg-[var(--text)]/5 hover:scale-[1.02] transition-transform duration-500 cursor-pointer">
+                        <img src="assets/images/award9.jpg" class="w-full h-auto object-cover opacity-90 hover:opacity-100 transition-opacity" alt="Award 9">
+                    </div>
+                    <div class="break-inside-avoid rounded-lg overflow-hidden bg-[var(--text)]/5 hover:scale-[1.02] transition-transform duration-500 cursor-pointer">
+                        <img src="assets/images/award10.jpg" class="w-full h-auto object-cover opacity-90 hover:opacity-100 transition-opacity" alt="Award 10">
+                    </div>
+                    <div class="break-inside-avoid rounded-lg overflow-hidden bg-[var(--text)]/5 hover:scale-[1.02] transition-transform duration-500 cursor-pointer">
+                        <img src="assets/images/award11.jpg" class="w-full h-auto object-cover opacity-90 hover:opacity-100 transition-opacity" alt="Award 11">
+                    </div>
+                    <div class="break-inside-avoid rounded-lg overflow-hidden bg-[var(--text)]/5 hover:scale-[1.02] transition-transform duration-500 cursor-pointer">
+                        <img src="assets/images/award12.jpg" class="w-full h-auto object-cover opacity-90 hover:opacity-100 transition-opacity" alt="Award 12">
+                    </div>
+                    <div class="break-inside-avoid rounded-lg overflow-hidden bg-[var(--text)]/5 hover:scale-[1.02] transition-transform duration-500 cursor-pointer">
+                        <img src="assets/images/award13.jpg" class="w-full h-auto object-cover opacity-90 hover:opacity-100 transition-opacity" alt="Award 13">
+                    </div>
+                    <div class="break-inside-avoid rounded-lg overflow-hidden bg-[var(--text)]/5 hover:scale-[1.02] transition-transform duration-500 cursor-pointer">
+                        <img src="assets/images/award14.jpg" class="w-full h-auto object-cover opacity-90 hover:opacity-100 transition-opacity" alt="Award 14">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Social Media / Xiaohongshu (New Section) -->
+    <section id="media" class="section-full grid-line-top justify-center">
+        <div class="flex justify-between items-end mb-8 md:mb-12 grid-line-bottom pb-6">
+            <div>
+                <h2 class="text-xs tracking-[0.3em] uppercase mb-2 opacity-50">04 // Social Media</h2>
+                <h3 class="text-4xl md:text-5xl font-bold font-zh">自媒体探索</h3>
+            </div>
+            <div class="text-right pb-2">
+                <a href="https://www.xiaohongshu.com/user/profile/5e4d3c9000000000010033d2?xsec_token=ABAGd-_vtOAJAp4yJ6W0LH1sK61IQudgs2NrK5-uDjGmI%3D&xsec_source=pc_search" target="_blank" class="text-xs md:text-sm font-mono tracking-widest uppercase hover:opacity-50 transition-opacity flex items-center gap-2">
+                    <span class="w-2 h-2 rounded-full bg-[#ff2442]"></span> 小红书主页 ->
+                </a>
+            </div>
+        </div>
+
+        <div class="grid md:grid-cols-4 gap-4 md:gap-6 items-start">
+            <!-- XHS Card 1 -->
+            <a href="https://www.xiaohongshu.com/discovery/item/69c0c67f0000000023016c19?source=webshare&xhsshare=pc_web&xsec_token=ABUjkleSTmx0HN0ooTfaMEYF_ilCuQDHc4a0dM4TeAlvA=&xsec_source=pc_share" target="_blank" class="xhs-card block group">
+                <div class="aspect-[4/3] md:aspect-[3/4] overflow-hidden relative">
+                    <!-- 使用占位图或默认图，稍后由用户替换 -->
+                    <img src="assets/images/xhs_1.jpg" onerror="this.src='https://images.unsplash.com/photo-1513694203232-719a280e022f?q=80&w=600&auto=format&fit=crop'" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" alt="我的PRD需求文档和原型竟然联动了！">
+                    <div class="absolute top-3 right-3 bg-black/50 backdrop-blur-md text-white text-[10px] px-2 py-1 rounded-full font-mono">HOT</div>
+                </div>
+                <div class="p-3 md:p-4 flex flex-col justify-between h-[100px]">
+                    <h4 class="font-bold text-xs md:text-sm mb-2 font-zh line-clamp-2 leading-relaxed">我的PRD需求文档和原型竟然联动了！</h4>
+                    <div class="flex items-center justify-between mt-auto">
+                        <div class="flex items-center gap-2">
+                            <div class="w-4 h-4 md:w-5 md:h-5 rounded-full bg-gray-200 overflow-hidden"><img src="assets/images/avatar.jpg" onerror="this.src='https://images.unsplash.com/photo-1503614472-8c93d56e92ce?q=80&w=100&auto=format&fit=crop'" class="w-full h-full object-cover" alt="小于小于xin"></div>
+                            <span class="text-[10px] md:text-xs opacity-60">小于小于xin</span>
+                        </div>
+                        <div class="flex items-center gap-4 text-xs opacity-90 font-mono">
+                            <span class="flex items-center gap-1.5"><svg width="14" height="14" viewBox="0 0 24 24" fill="#ff2442" stroke="none"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg> 4399</span>
+                            <span class="flex items-center gap-1.5"><svg width="14" height="14" viewBox="0 0 24 24" fill="#fac858" stroke="none"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg> 7058</span>
+                        </div>
+                    </div>
+                </div>
+            </a>
+
+            <!-- XHS Card 2 -->
+            <a href="https://www.xiaohongshu.com/explore/69458604000000001b026973?xsec_token=ABbyl2bV1a0WhKmt7jnJjdi2x05WMJnWLyrxCtIMZ8Dqc=&xsec_source=pc_user" target="_blank" class="xhs-card block group md:mt-8">
+                <div class="aspect-[4/3] md:aspect-[3/4] overflow-hidden relative">
+                    <img src="assets/images/xhs_2.jpg" onerror="this.src='https://images.unsplash.com/photo-1497366216548-37526070297c?q=80&w=600&auto=format&fit=crop'" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" alt="想问一下建筑学的家人们现在还开渲染器吗？">
+                </div>
+                <div class="p-3 md:p-4 flex flex-col justify-between h-[100px]">
+                    <h4 class="font-bold text-xs md:text-sm mb-2 font-zh line-clamp-2 leading-relaxed">想问一下建筑学的家人们现在还开渲染器吗？</h4>
+                    <div class="flex items-center justify-between mt-auto">
+                        <div class="flex items-center gap-2">
+                            <div class="w-4 h-4 md:w-5 md:h-5 rounded-full bg-gray-200 overflow-hidden"><img src="assets/images/avatar.jpg" onerror="this.src='https://images.unsplash.com/photo-1503614472-8c93d56e92ce?q=80&w=100&auto=format&fit=crop'" class="w-full h-full object-cover" alt="小于小于xin"></div>
+                            <span class="text-[10px] md:text-xs opacity-60">小于小于xin</span>
+                        </div>
+                        <div class="flex items-center gap-4 text-xs opacity-90 font-mono">
+                            <span class="flex items-center gap-1.5"><svg width="14" height="14" viewBox="0 0 24 24" fill="#ff2442" stroke="none"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg> 2329</span>
+                            <span class="flex items-center gap-1.5"><svg width="14" height="14" viewBox="0 0 24 24" fill="#fac858" stroke="none"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg> 2115</span>
+                        </div>
+                    </div>
+                </div>
+            </a>
+
+            <!-- XHS Card 3 -->
+            <a href="https://www.xiaohongshu.com/explore/69383c330000000019027552?xsec_token=ABUEItZV4EPxZ5k-Z3OE19jf03t8-qt2xvzm03QiWUPgo=&xsec_source=pc_user" target="_blank" class="xhs-card block group">
+                <div class="aspect-[4/3] md:aspect-[3/4] overflow-hidden relative">
+                    <img src="assets/images/xhs_3.jpg" onerror="this.src='https://images.unsplash.com/photo-1600585154340-be6161a56a0c?q=80&w=600&auto=format&fit=crop'" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" alt="🍌Banana Pro邪修 | 户型平面生成效果图">
+                </div>
+                <div class="p-3 md:p-4 flex flex-col justify-between h-[100px]">
+                    <h4 class="font-bold text-xs md:text-sm mb-2 font-zh line-clamp-2 leading-relaxed">🍌Banana Pro邪修 | 户型平面生成效果图</h4>
+                    <div class="flex items-center justify-between mt-auto">
+                        <div class="flex items-center gap-2">
+                            <div class="w-4 h-4 md:w-5 md:h-5 rounded-full bg-gray-200 overflow-hidden"><img src="assets/images/avatar.jpg" onerror="this.src='https://images.unsplash.com/photo-1503614472-8c93d56e92ce?q=80&w=100&auto=format&fit=crop'" class="w-full h-full object-cover" alt="小于小于xin"></div>
+                            <span class="text-[10px] md:text-xs opacity-60">小于小于xin</span>
+                        </div>
+                        <div class="flex items-center gap-4 text-xs opacity-90 font-mono">
+                            <span class="flex items-center gap-1.5"><svg width="14" height="14" viewBox="0 0 24 24" fill="#ff2442" stroke="none"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg> 1443</span>
+                            <span class="flex items-center gap-1.5"><svg width="14" height="14" viewBox="0 0 24 24" fill="#fac858" stroke="none"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg> 1882</span>
+                        </div>
+                    </div>
+                </div>
+            </a>
+            
+            <!-- Context Text -->
+            <div class="md:col-span-1 p-4 md:p-6 md:mt-16">
+                <p class="text-xs md:text-sm leading-relaxed opacity-70 font-light border-l border-[var(--text)] pl-4">
+                    在小红书，我记录从建筑到数字产品的思考碎片、AI工具探索以及设计技巧。
+                    <br><br>
+                    这是一个与设计社区保持连接、持续输出与反思的自留地。
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <!-- About & Footer -->
+    <section id="about" class="section-full grid-line-top justify-center">
+        <div class="grid md:grid-cols-2 gap-16 items-center">
+            <div class="pr-12">
+                <h2 class="text-xs tracking-[0.3em] uppercase mb-6 opacity-50">05 // Beyond Boundaries</h2>
+                <h3 class="text-5xl font-bold font-zh mb-8">边界之外</h3>
+                <p class="leading-relaxed opacity-80 mb-12 text-sm md:text-base font-light">
+                    空间与界面的终点，是体验的起点。我热衷于在理性与感性间寻找平衡：从镜头下的光影构图，到代码构建的参数化形态。我享受通过数字媒介拆解复杂世界的过程，并坚信这种跨界的视角，才是驱动持续创新的底层元能力。
+                </p>
+                
+                <div class="mb-16">
+                    <h4 class="font-bold mb-6 text-xs tracking-[0.2em] uppercase opacity-50">核心技能 / SKILLS</h4>
+                    
+                    <div class="mb-6">
+                        <p class="text-xs uppercase tracking-widest mb-3 opacity-60">语言</p>
+                        <div class="flex flex-wrap gap-2">
+                            <span class="px-4 py-1.5 border border-[var(--text)] text-xs rounded-full">英语</span>
+                            <span class="px-4 py-1.5 border border-[var(--text)] text-xs rounded-full">普通话</span>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-6">
+                        <p class="text-xs uppercase tracking-widest mb-3 opacity-60">数智办公与协同</p>
+                        <div class="flex flex-wrap gap-2">
+                            <span class="px-4 py-1.5 border border-[var(--text)] text-xs rounded-full">Excel</span>
+                            <span class="px-4 py-1.5 border border-[var(--text)] text-xs rounded-full">SQL</span>
+                            <span class="px-4 py-1.5 border border-[var(--text)] text-xs rounded-full">coze / n8n</span>
+                            <span class="px-4 py-1.5 border border-[var(--text)] text-xs rounded-full">Cursor / Trae</span>
+                            <span class="px-4 py-1.5 border border-[var(--text)] text-xs rounded-full">Xmind</span>
+                            <span class="px-4 py-1.5 border border-[var(--text)] text-xs rounded-full">PPT</span>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-6">
+                        <p class="text-xs uppercase tracking-widest mb-3 opacity-60">数字化管理与规划</p>
+                        <div class="flex flex-wrap gap-2">
+                            <span class="px-4 py-1.5 border border-[var(--text)] text-xs rounded-full">标准化 SOP 编制</span>
+                            <span class="px-4 py-1.5 border border-[var(--text)] text-xs rounded-full">PRD 文档撰写</span>
+                            <span class="px-4 py-1.5 border border-[var(--text)] text-xs rounded-full">Figma 原型设计</span>
+                        </div>
+                    </div>
+
+                    <div class="mb-6">
+                        <p class="text-xs uppercase tracking-widest mb-3 opacity-60">工程设计</p>
+                        <div class="flex flex-wrap gap-2">
+                            <span class="px-4 py-1.5 border border-[var(--text)] text-xs rounded-full">AutoCAD</span>
+                            <span class="px-4 py-1.5 border border-[var(--text)] text-xs rounded-full">Photoshop</span>
+                            <span class="px-4 py-1.5 border border-[var(--text)] text-xs rounded-full">D5 Render</span>
+                            <span class="px-4 py-1.5 border border-[var(--text)] text-xs rounded-full">Rhino</span>
+                            <span class="px-4 py-1.5 border border-[var(--text)] text-xs rounded-full">Grasshopper</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 摄影/爱好占位图 - 三列布局，支持滑动且严格按照3:4和4:3比例，限制高度防穿模 -->
+            <div class="h-[65vh] overflow-y-auto no-scrollbar pb-8 relative z-0">
+                <div class="grid grid-cols-3 gap-3 md:gap-4">
+                    <!-- 左列 -->
+                    <div class="flex flex-col gap-3 md:gap-4 mt-12">
+                        <div class="project-image bg-[var(--line)] rounded-lg overflow-hidden aspect-[3/4]">
+                             <img src="assets/images/hobby 1.jpg" onerror="this.src='https://images.unsplash.com/photo-1511818966892-d7d671e67287?q=80&w=600&auto=format&fit=crop'" class="w-full h-full object-cover" alt="Hobby 1">
+                        </div>
+                        <div class="project-image bg-[var(--line)] rounded-lg overflow-hidden aspect-[4/3]">
+                             <img src="assets/images/hobby 2.jpg" onerror="this.src='https://images.unsplash.com/photo-1481026469463-66327c86e544?q=80&w=600&auto=format&fit=crop'" class="w-full h-full object-cover" alt="Hobby 2">
+                        </div>
+                        <div class="project-image bg-[var(--line)] rounded-lg overflow-hidden aspect-[3/4]">
+                             <img src="assets/images/hobby 8.jpg" onerror="this.src='https://images.unsplash.com/photo-1542038784456-1ea8e935640e?q=80&w=600&auto=format&fit=crop'" class="w-full h-full object-cover" alt="Hobby 8">
+                        </div>
+                    </div>
+                    <!-- 中列 -->
+                    <div class="flex flex-col gap-3 md:gap-4">
+                        <div class="project-image bg-[var(--line)] rounded-lg overflow-hidden aspect-[4/3]">
+                             <img src="assets/images/hobby 3.jpg" onerror="this.src='https://images.unsplash.com/photo-1493246507139-91e8fad9978e?q=80&w=600&auto=format&fit=crop'" class="w-full h-full object-cover" alt="Hobby 3">
+                        </div>
+                        <div class="project-image bg-[var(--line)] rounded-lg overflow-hidden aspect-[3/4]">
+                             <img src="assets/images/hobby 4.jpg" onerror="this.src='https://images.unsplash.com/photo-1513694203232-719a280e022f?q=80&w=600&auto=format&fit=crop'" class="w-full h-full object-cover" alt="Hobby 4">
+                        </div>
+                        <div class="project-image bg-[var(--line)] rounded-lg overflow-hidden aspect-[3/4]">
+                             <img src="assets/images/hobby 5.jpg" onerror="this.src='https://images.unsplash.com/photo-1528698827591-e19ccd7bc23d?q=80&w=600&auto=format&fit=crop'" class="w-full h-full object-cover" alt="Hobby 5">
+                        </div>
+                    </div>
+                    <!-- 右列 -->
+                    <div class="flex flex-col gap-3 md:gap-4 mt-6">
+                        <div class="project-image bg-[var(--line)] rounded-lg overflow-hidden aspect-[3/4]">
+                             <img src="assets/images/hobby 6.jpg" onerror="this.src='https://images.unsplash.com/photo-1469474968028-56623f02e42e?q=80&w=600&auto=format&fit=crop'" class="w-full h-full object-cover" alt="Hobby 6">
+                        </div>
+                        <div class="project-image bg-[var(--line)] rounded-lg overflow-hidden aspect-[3/4]">
+                             <img src="assets/images/hobby 7.jpg" onerror="this.src='https://images.unsplash.com/photo-1506744626753-1fa44df14c28?q=80&w=600&auto=format&fit=crop'" class="w-full h-full object-cover" alt="Hobby 7">
+                        </div>
+                        <div class="project-image bg-[var(--line)] rounded-lg overflow-hidden aspect-[4/3]">
+                             <img src="assets/images/hobby 9.jpg" onerror="this.src='https://images.unsplash.com/photo-1470071131384-001b85755b36?q=80&w=600&auto=format&fit=crop'" class="w-full h-full object-cover" alt="Hobby 9">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <footer class="absolute bottom-8 left-0 w-full flex flex-col md:flex-row justify-between items-center px-0 text-sm tracking-widest font-mono border-t border-[var(--line)] pt-6 z-10 bg-[var(--bg)]">
+            <!-- 左侧：联系方式 (放大字体和图标，完全靠左对齐) -->
+            <div class="flex items-center gap-8 opacity-80 lowercase w-full md:w-auto justify-start mb-4 md:mb-0">
+                <a href="mailto:chyxin071@outlook.com" class="flex items-center gap-2 hover:opacity-70 transition-opacity">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="opacity-70"><rect x="2" y="4" width="20" height="16" rx="2"></rect><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"></path></svg>
+                    <span class="text-base">chyxin071@outlook.com</span>
+                </a>
+                <div class="flex items-center gap-2">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="opacity-70"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>
+                    <span class="text-base">chyxin222</span>
+                </div>
+            </div>
+            <!-- 右侧：版权 -->
+            <span class="opacity-40 uppercase text-xs w-full md:w-auto text-right pr-4">Designed & Coded by 陈于昕</span>
+        </footer>
+    </section>
+
+    <!-- Project Modal Container -->
+    <div id="projectModal" class="project-modal">
+        <div class="modal-header">
+            <div class="text-xs font-mono tracking-[0.3em] uppercase opacity-50" id="modalTitle">Project Details</div>
+            <button class="modal-close-btn" onclick="closeModal()">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                Close
+            </button>
+        </div>
+        <iframe id="modalIframe" class="modal-content" src="" frameborder="0"></iframe>
+    </div>
+
+    <!-- ScrollSpy Script -->
+    <script>
+        // Modal Logic
+        const modal = document.getElementById('projectModal');
+        const modalIframe = document.getElementById('modalIframe');
+
+        function openModal(url) {
+            modalIframe.src = url;
+            modal.classList.add('active');
+            document.body.classList.add('modal-open');
+        }
+
+        function closeModal() {
+            modal.classList.remove('active');
+            document.body.classList.remove('modal-open');
+            // 延迟清空 src，等待动画完成
+            setTimeout(() => {
+                modalIframe.src = '';
+            }, 600);
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const sections = document.querySelectorAll('.section-full');
+            const navLinks = document.querySelectorAll('.top-nav a');
+            const mainContainer = document.body;
+
+            // Intersection Observer for fade-in effect (高级显现感)
+            const observerOptions = {
+                root: mainContainer, // 使用 body 作为滚动容器
+                rootMargin: '0px',
+                threshold: 0.25 // 当 25% 的元素进入视口时触发
+            };
+
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('is-visible');
+                    }
+                });
+            }, observerOptions);
+
+            sections.forEach(section => {
+                observer.observe(section);
+            });
+
+            // Fallback: 确保首屏立刻显示
+            setTimeout(() => {
+                const firstSection = document.getElementById('home');
+                if(firstSection) firstSection.classList.add('is-visible');
+            }, 100);
+
+            // Nav active state update
+            mainContainer.addEventListener('scroll', () => {
+                let current = '';
+                sections.forEach(section => {
+                    const sectionTop = section.offsetTop;
+                    const sectionHeight = section.clientHeight;
+                    if (mainContainer.scrollTop >= (sectionTop - sectionHeight / 3)) {
+                        current = section.getAttribute('id');
+                    }
+                });
+
+                // 如果在项目2和项目3，高亮works
+                if(!current && mainContainer.scrollTop > window.innerHeight * 2) {
+                    current = 'works';
+                }
+
+                navLinks.forEach(link => {
+                    link.classList.remove('active');
+                    if (link.getAttribute('href') === `#${current}`) {
+                        link.classList.add('active');
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+</html>

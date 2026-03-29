@@ -1,0 +1,2959 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>筑家云记 PRD v1.0 - 产品需求文档</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #000000;
+            --accent: #D4AF37;
+            --bg-light: #f8f9fa;
+            --border: #e5e7eb;
+            --text-main: #1f2937;
+            --text-sub: #6b7280;
+            --sidebar-width: 280px;
+            --header-height: 60px;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: "Microsoft YaHei", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            color: var(--text-main);
+            background: #fff;
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Header */
+        header {
+            height: var(--header-height);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 24px;
+            background: #fff;
+            z-index: 50;
+            flex-shrink: 0;
+        }
+        
+        .brand { font-size: 18px; font-weight: 700; display: flex; align-items: center; gap: 10px; }
+        .brand-icon { width: 32px; height: 32px; background: var(--primary); color: #fff; display: flex; align-items: center; justify-content: center; border-radius: 6px; font-family: 'Times New Roman', serif; }
+        .meta-info { display: flex; gap: 24px; font-size: 12px; color: var(--text-sub); }
+        .meta-item { display: flex; align-items: center; gap: 6px; }
+
+        /* 左右布局容器 */
+        .layout-container {
+            flex: 1;
+            display: flex;
+            overflow: hidden;
+            position: relative;
+            background: #fff;
+        }
+
+        /* 侧边悬浮标签 (目录/原型) */
+        .side-tab {
+            position: fixed; /* 必须使用 fixed，这样无论怎么滚动它都在固定位置 */
+            top: calc(var(--header-height) + 36px); /* 向上微调，使其中心与标题平齐 */
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            color: #64748b; 
+            padding: 24px 8px; /* 加高变窄，类似书签 */
+            font-size: 12px; 
+            font-weight: 500;
+            cursor: pointer;
+            z-index: 100;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.08); 
+            border: 1px solid #e2e8f0; 
+            writing-mode: vertical-rl; /* 强制垂直排版文字 */
+            text-orientation: mixed;
+            letter-spacing: 6px; 
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            min-height: 80px; 
+            text-align: center;
+        }
+
+        .side-tab:hover {
+            background: rgba(255, 255, 255, 1);
+            color: #334155;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        }
+
+        /* 左侧标签 (目录) */
+        .left-tab {
+            left: 0;
+            border-radius: 0 8px 8px 0;
+            border-left: none;
+        }
+        .layout-container.state-sidebar-open .left-tab {
+            left: var(--sidebar-width); /* 当目录打开时向右推移 */
+        }
+
+        /* 右侧标签 (原型) */
+        .right-tab {
+            right: 0;
+            border-radius: 8px 0 0 8px;
+            border-right: none;
+        }
+        .layout-container.state-prototype-open .right-tab {
+            right: max(35%, 420px); /* 确保完全靠在抽屉左侧边界，不跨越中间 */
+            margin-right: -1px; /* 弥补边框的缝隙使其完美对齐 */
+        }
+
+        /* 侧边栏状态管理 */
+        .sidebar {
+            width: 0;
+            border-right: 1px solid var(--border);
+            background: var(--bg-light);
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            padding-top: 40px; /* 使目录第一项下降，与右侧内容平齐 */
+            padding-bottom: 40px;
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            position: relative;
+            z-index: 20;
+            flex-shrink: 0;
+            opacity: 0;
+            /* 隐藏系统滚动条 */
+            scrollbar-width: none; /* Firefox */
+            -ms-overflow-style: none; /* IE/Edge */
+        }
+        .sidebar::-webkit-scrollbar {
+            display: none; /* Chrome/Safari/Opera */
+        }
+
+        .layout-container.state-sidebar-open .sidebar {
+            width: var(--sidebar-width);
+            opacity: 1;
+        }
+
+        /* 文档主体内容区域 */
+        .content-area {
+            flex: 1;
+            min-width: 0; /* 允许在空间不足时收缩，防止撑破 flex 容器 */
+            overflow-y: auto;
+            overflow-x: auto; /* 当内部表格太宽时，允许水平滚动 */
+            scroll-behavior: smooth;
+            position: relative;
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            background: #fff;
+        }
+
+        .doc-panel {
+            width: 100%;
+            max-width: 1000px; /* 进一步扩宽 */
+            padding: 40px 40px 60px 40px; /* 减小顶部 padding，使其与侧边栏对齐 */
+            transition: all 0.3s ease;
+            margin: 0 auto;
+        }
+
+        /* Prototype Drawer */
+        .prototype-drawer {
+            position: relative; /* Changed to relative so it occupies space in flex layout, preventing overlap */
+            width: 0;
+            background: #fff; /* 改为白色 */
+            border-left: 1px solid var(--border);
+            z-index: 40;
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            opacity: 0;
+            flex-shrink: 0; /* Prevent shrinking */
+        }
+
+        /* Container specifically for the iframe to make it sticky/fixed within the relative drawer */
+        .prototype-drawer-content {
+            position: fixed;
+            top: var(--header-height);
+            bottom: 0;
+            right: 0;
+            width: 35%;
+            min-width: 420px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            transform: translateX(100%);
+            transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            background: #fff; /* 改为白色 */
+            z-index: 45;
+            border-left: 1px solid var(--border); /* 为 drawer-content 也加上边框以防万一 */
+        }
+
+        .prototype-drawer-content > div {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            /* Container for the scaled phone */
+            position: relative;
+        }
+
+        /* Use the same mockup style as feature blocks for consistency, but scale it */
+                .drawer-mockup {
+            position: relative;
+            width: 318.75px; 
+            height: 690.2px; 
+            background: transparent;
+            flex-shrink: 0;
+            border-radius: 34px; 
+            box-shadow: 0 20px 40px rgba(0,0,0,0.15); 
+            /* overflow: hidden; */ /* 移除，以允许右下角的刷新按钮显示出来 */
+        }
+
+        .drawer-mockup .iphone-notch {
+            display: none; /* 原型已自带，这里不重复绘制 */
+        }
+
+        .drawer-mockup         .iphone-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: transparent;
+            overflow: hidden;
+            border-radius: 34px;
+            z-index: 1; /* 确保它在前面 */
+        }
+
+                .drawer-mockup iframe {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 375px;
+            height: 812px;
+            transform: scale(0.85);
+            transform-origin: 0 0;
+            border: none;
+            padding-top: 0;
+            box-sizing: border-box;
+            background: transparent;
+            pointer-events: auto; /* 确保可以交互 */
+        }
+        
+        .drawer-refresh-btn {
+            position: absolute;
+            bottom: 20px;
+            right: -70px;
+            width: 56px;
+            height: 56px;
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(8px);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            cursor: pointer;
+            z-index: 100;
+            color: #334155;
+            font-size: 24px;
+            transition: all 0.2s;
+            border: 1px solid #e2e8f0;
+        }
+        .drawer-refresh-btn:hover { transform: scale(1.1); color: #000; }
+        .drawer-refresh-btn:active { transform: scale(0.95); }
+
+        .layout-container.state-prototype-open .prototype-drawer {
+            width: 35%;
+            min-width: 420px;
+            opacity: 1;
+        }
+
+        .layout-container.state-prototype-open .prototype-drawer-content {
+            transform: translateX(0);
+        }
+
+        /* Remove old toggle buttons */
+        /* .sidebar-toggle { ... } */
+        /* .close-preview-btn { ... } */
+
+        /* 导航栏基础样式 */
+        .nav-section { 
+            padding: 0; 
+            margin-bottom: 0; /* 消除默认间距 */
+        }
+        
+        /* 一级目录 (带折叠功能) */
+        .nav-title { 
+            padding: 12px 16px 12px 24px; 
+            font-size: 15px; 
+            font-weight: 700; 
+            color: #1e293b; 
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            border-left: 3px solid transparent; 
+            line-height: 1.5;
+        }
+        /* 隐藏右侧的小箭头，仅保留折叠功能 */
+        .nav-title i { display: none; }
+        .nav-title:hover { background: #f1f5f9; }
+
+        /* 二级目录标题 (如 4.1 公共基础模块，带折叠功能) */
+        .nav-subtitle {
+            padding: 8px 16px 4px 36px;
+            font-size: 13px;
+            font-weight: 600;
+            color: #475569;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+        }
+        .nav-subtitle:hover { color: #1e293b; }
+
+        /* 通用目录项 (一级或三级) */
+        .nav-item { 
+            display: flex; 
+            align-items: center; 
+            padding: 12px 16px 12px 24px; 
+            font-size: 15px; 
+            font-weight: 700; /* 与 nav-title 保持一致 */
+            color: #1e293b; 
+            text-decoration: none; 
+            border-left: 3px solid transparent; 
+            cursor: pointer; 
+            transition: all 0.2s; 
+            position: relative;
+            line-height: 1.5;
+        }
+        
+        /* 三级目录项 (具体功能点) */
+        .nav-item.sub-item {
+            padding: 8px 16px 8px 52px;
+            font-size: 13px;
+            font-weight: 400;
+            color: #64748b;
+        }
+        .nav-item.sub-item::before {
+            content: "";
+            position: absolute;
+            left: 38px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 4px;
+            height: 4px;
+            background-color: #cbd5e1;
+            border-radius: 50%;
+        }
+        
+        /* 悬浮与激活状态 */
+        .nav-item:hover { background: #f1f5f9; color: #1e293b; }
+        .nav-item.active { 
+            background: #f1f5f9; 
+            border-left-color: #0284c7; 
+            color: #1e293b; 
+            font-weight: 700; 
+        }
+        .nav-item.sub-item.active {
+            font-weight: 600;
+        }
+        .nav-item.sub-item.active::before {
+            background-color: #0284c7;
+        }
+        
+        /* 子菜单容器 */
+        .sub-menu {
+            display: block; /* 默认展开，可通过JS切换为 none */
+            overflow: hidden;
+            transition: height 0.3s ease;
+        }
+        .doc-section { 
+            margin-bottom: 60px; 
+            scroll-margin-top: 20px; 
+        }
+        
+        /* Heading Styles based on typography hierarchy */
+        .doc-panel h1 { 
+            font-size: 1.5rem !important; /* 调整为24px，比之前减小4px */ 
+            line-height: 2.25rem !important; 
+            font-weight: 800 !important; /* extra bold */
+            color: #0f172a !important; /* slate-900 */ 
+            margin-top: 0 !important; /* 取消H1顶部多余的margin，保证与侧边栏对齐 */
+            margin-bottom: 32px !important; 
+            padding-bottom: 16px !important; 
+            border-bottom: 2px solid #e2e8f0 !important; 
+            display: block !important;
+        }
+        .doc-panel h2 { 
+            font-size: 1.375rem !important; /* 调整为22px，拉开梯度 */
+            line-height: 2rem !important;
+            margin: 40px 0 24px !important; 
+            font-weight: 700 !important; /* bold */
+            color: #1e293b !important; /* slate-800 */
+        }
+        .doc-panel h3 { 
+            font-size: 1.125rem !important; /* 调整为18px */
+            line-height: 1.75rem !important;
+            margin: 32px 0 16px !important; 
+            padding-left: 12px !important;
+            border-left: 4px solid var(--primary) !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: flex-start !important; /* 改为左对齐 */
+            gap: 12px !important;
+            font-weight: 600 !important; /* semibold */
+            color: #334155 !important; 
+        }
+        .doc-panel h4 { font-size: 1.125rem !important; /* text-lg */ margin: 24px 0 16px !important; font-weight: 600 !important; color: #475569 !important; }
+        .doc-panel h5 { font-size: 1rem !important; margin: 16px 0 12px !important; font-weight: 600 !important; color: #64748b !important; }
+        
+        .doc-panel p { font-size: 1rem !important; line-height: 2 !important; color: #334155 !important; margin-bottom: 24px !important; }
+        .doc-panel ul, .doc-panel ol { margin-left: 24px !important; margin-bottom: 24px !important; font-size: 1rem !important; color: #334155 !important; line-height: 1.8 !important; }
+        .doc-panel li { margin-bottom: 16px !important; }
+        
+        table { width: 100%; border-collapse: collapse; margin-bottom: 24px; font-size: 0.875rem; /* text-sm */ color: #475569; background-color: #ffffff; table-layout: auto; }
+        th, td { border: 1px solid #f1f5f9; /* border-slate-100 */ padding: 12px; text-align: left; }
+        th:first-child, td:first-child { white-space: nowrap; width: 1%; } /* 防止第一列换行，并自动收缩到最小宽度 */
+        th { background: #f8fafc; font-weight: 600; color: #334155; }
+        .tag { display: inline-block; padding: 2px 6px; border-radius: 4px; font-size: 11px; font-weight: 600; margin-right: 6px; vertical-align: middle; }
+        .tag.p0 { background: #fee2e2; color: #991b1b; }
+        .tag.p1 { background: #ffedd5; color: #9a3412; }
+        .tag.p2 { background: #f1f5f9; color: #64748b; } /* 灰底 */
+        .tag.new { background: #d1fae5; color: #065f46; }
+        .tag.opt { background: #e0e7ff; color: #3730a3; }
+        .action-btn { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; background: #000; color: #fff; border-radius: 6px; font-size: 12px; cursor: pointer; border: none; transition: transform 0.1s; margin-left: 10px; }
+        .action-btn:active { transform: scale(0.95); }
+        blockquote { border-left: 4px solid #e5e7eb; padding-left: 16px; margin: 16px 0; color: #6b7280; font-size: 14px; font-style: italic; background: #f9fafb; padding: 12px 16px; border-radius: 0 4px 4px 0; }
+        
+        .feature-block { display: flex; gap: 40px; margin-bottom: 60px; padding-bottom: 40px; border-bottom: 1px dashed var(--border); }
+        .feature-desc { flex: 1; }
+                .feature-demo { 
+            width: 360px; /* 给缩放后的小手机预留的空间，不要太宽 */
+            flex-shrink: 0; 
+            display: flex; 
+            justify-content: center; 
+            align-items: flex-start; 
+            padding-top: 32px; /* 与 H3 的 margin-top 保持对齐 */
+        }
+        /* 保留沙盒小手机切片展示 */
+        
+        /* 移除多余的外部手机壳，直接让 iframe 承担展示任务，因为原型内部已经自带了一个完美的 375x812 黑框手机壳 */
+                .iphone-mockup {
+            position: relative;
+            width: 262.5px; 
+            height: 568.4px; 
+            flex-shrink: 0; 
+            background: transparent;
+            border-radius: 28px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1); 
+            /* overflow: hidden; */ /* 移除以允许外侧刷新按钮显示 */
+        }
+        
+        .iphone-notch {
+            display: none; 
+        }
+        
+                .iphone-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: transparent;
+            overflow: hidden;
+            border-radius: 28px;
+            z-index: 1; /* 确保它在前面 */
+        }
+        
+        /* 直接让 iframe 100% 呈现，不加任何多余的限制，靠原型内部的 CSS 来约束 */
+                .iphone-iframe {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 375px;
+            height: 812px;
+            transform: scale(0.7);
+            transform-origin: 0 0;
+            border: none;
+            background: transparent;
+            pointer-events: auto; /* 确保可以交互 */
+        }
+
+        /* 刷新按钮样式 */
+                .refresh-btn {
+            position: absolute;
+            bottom: 20px;
+            right: -70px;
+            width: 48px;
+            height: 48px;
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(8px);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            cursor: pointer;
+            z-index: 100;
+            color: #334155;
+            font-size: 24px;
+            transition: all 0.2s;
+            border: 1px solid #e2e8f0;
+        }
+
+        .refresh-btn:hover {
+            transform: scale(1.1);
+            color: #000;
+        }
+
+        .refresh-btn:active {
+            transform: scale(0.95);
+        }
+        .spec-list { margin-left: 0 !important; list-style: none !important; }
+        .spec-item { margin-bottom: 24px !important; }
+        .spec-label { display: inline-block; font-size: 13px; font-weight: 700; color: #374151; background: #f3f4f6; padding: 4px 10px; border-radius: 4px; margin-bottom: 8px; }
+        .spec-content { font-size: 14px; color: #4b5563; line-height: 1.8; padding-left: 4px; }
+        .spec-content ul { margin-left: 20px !important; margin-bottom: 0 !important; list-style-type: disc !important; }
+        .spec-content li { margin-bottom: 4px !important; }
+        
+        .important-note {
+            border-left: 4px solid #fbbf24;
+            background: #fffbeb;
+            padding: 16px;
+            margin: 24px 0 16px;
+            color: #92400e;
+            font-size: 14px;
+            border-radius: 0 8px 8px 0;
+            line-height: 1.6;
+        }
+        .important-note strong { color: #b45309; }
+    </style>
+    <!-- Mermaid for Flowcharts -->
+    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+    <script>
+        mermaid.initialize({ 
+            startOnLoad: true, 
+            theme: 'base',
+            themeVariables: {
+                primaryColor: '#f8fafc',
+                primaryTextColor: '#1e293b',
+                primaryBorderColor: '#cbd5e1',
+                lineColor: '#94a3b8',
+                secondaryColor: '#f1f5f9',
+                tertiaryColor: '#fff',
+                fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+                actorBkg: '#fff',
+                actorBorder: '#1e293b',
+                actorTextColor: '#1e293b',
+                actorLineColor: '#94a3b8',
+                signalColor: '#334155',
+                signalTextColor: '#334155',
+                labelBoxBkgColor: '#f8fafc',
+                labelBoxBorderColor: '#cbd5e1',
+                labelTextColor: '#1e293b',
+                loopTextColor: '#1e293b',
+                noteBkgColor: '#fef3c7',
+                noteTextColor: '#92400e',
+                noteBorderColor: '#f59e0b'
+            },
+            sequence: {
+                actorMargin: 50,
+                messageMargin: 40,
+                boxMargin: 10,
+                boxTextMargin: 5,
+                noteMargin: 10,
+                messageAlign: 'center'
+            }
+        });
+    </script>
+    <style>
+        .mermaid-container {
+            background: #fff;
+            border: 1px solid #e2e8f0;
+            border-radius: 16px;
+            padding: 32px 24px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+            margin-top: 16px;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 180px;
+            scrollbar-width: none; /* Firefox */
+            -ms-overflow-style: none; /* IE/Edge */
+            cursor: grab;
+        }
+        .mermaid-container::-webkit-scrollbar { display: none; } /* Webkit */
+        /* Remove global scale to apply specific scales via ID */
+        .mermaid-container .mermaid {
+            transform-origin: center center;
+        }
+        #mermaid-flow-1 { margin-bottom: 40px; }
+        #mermaid-flow-2 { margin-bottom: 40px; }
+        #mermaid-flow-3 { margin-bottom: 40px; }
+    </style>
+</head>
+<body>
+
+<header>
+    <div class="brand">
+        <div class="brand-icon">筑</div>
+        <span>筑家云记 PRD</span>
+        <span style="font-size: 12px; color: var(--text-sub); font-weight: 400; margin-left: 8px;">v1.0</span>
+    </div>
+    <div class="meta-info">
+        <div class="meta-item"><i class="ri-user-line"></i> 文档负责人：陈小于</div>
+        <div class="meta-item"><i class="ri-calendar-line"></i> 最后更新：2026-03-19</div>
+        <div class="meta-item" style="color: var(--accent); font-weight: 600;"><i class="ri-checkbox-circle-line"></i> PRD版本：v1.0</div>
+    </div>
+</header>
+
+<!-- state-sidebar-open by default -->
+<div class="layout-container state-sidebar-open" id="main-container">
+    
+    <!-- Left Tab (Directory) -->
+    <div class="side-tab left-tab" id="left-tab" onclick="toggleSidebar()">
+        目录
+    </div>
+
+    <!-- Navigation -->
+    <nav class="sidebar">
+        <div class="nav-section">
+            <a href="#section-info" class="nav-item active">📋 项目信息</a>
+            <a href="#section-version" class="nav-item">📝 版本记录</a>
+            <a href="#section-background" class="nav-item">一、问题定义与边界</a>
+            <a href="#section-objectives" class="nav-item">二、目标与衡量</a>
+            <a href="#section-goals" class="nav-item">三、用户与场景旅程图</a>
+            
+            <div class="nav-title" onclick="toggleSubMenu('menu-3')">三、需求功能清单</div>
+            <div id="menu-3" class="sub-menu">
+                <a href="#section-3-1" class="nav-item sub-item">3.1 公共基础模块</a>
+                <a href="#section-3-2" class="nav-item sub-item">3.2 员工端：管理工作台</a>
+                <a href="#section-3-3" class="nav-item sub-item">3.3 业主端：云监工平台</a>
+            </div>
+        </div>
+
+        <div class="nav-section">
+            <div class="nav-title" onclick="toggleSubMenu('menu-4')">
+                四、详细方案
+            </div>
+            <div id="menu-4" class="sub-menu">
+                <div class="nav-subtitle" onclick="toggleSubMenu('menu-4-1')">4.1 公共基础模块</div>
+                <div id="menu-4-1" class="sub-menu">
+                    <a href="#section-4-1-1" class="nav-item sub-item">4.1.1 身份选择与验证</a>
+                    
+                </div>
+
+                <div class="nav-subtitle" onclick="toggleSubMenu('menu-4-2')">4.2 员工端：管理工作台</div>
+                <div id="menu-4-2" class="sub-menu">
+                    <a href="#section-4-2-1" class="nav-item sub-item">4.2.1 工地监控大盘</a>
+                    <a href="#section-4-2-2" class="nav-item sub-item">4.2.2 新工地建档</a>
+                    <a href="#section-4-2-3" class="nav-item sub-item">4.2.3 结构化施工日报</a>
+                    <a href="#section-4-2-4" class="nav-item sub-item">4.2.4 进度计划表</a>
+                    <a href="#section-4-2-5" class="nav-item sub-item">4.2.5 主材到场管控</a>
+                    <a href="#section-4-2-6" class="nav-item sub-item">4.2.6 反馈处理中心</a>
+                </div>
+
+                <div class="nav-subtitle" onclick="toggleSubMenu('menu-4-3')">4.3 业主端：云监工平台</div>
+                <div id="menu-4-3" class="sub-menu">
+                    <a href="#section-4-3-1" class="nav-item sub-item">4.3.1 新家成长播报</a>
+                    <a href="#section-4-3-2" class="nav-item sub-item">4.3.2 工艺标准库</a>
+                    <a href="#section-4-3-3" class="nav-item sub-item">4.3.3 可视化进度看板</a>
+                    <a href="#section-4-3-4" class="nav-item sub-item">4.3.4 透明材料清单</a>
+                    <a href="#section-4-3-5" class="nav-item sub-item">4.3.5 数字化档案室</a>
+                    <a href="#section-4-3-6" class="nav-item sub-item">4.3.6 个人信息定制</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="nav-section">
+            <a href="#section-flowchart" class="nav-item">五、流程图</a>
+            <a href="#section-exception" class="nav-item">六、异常与边界处理</a>
+            <a href="#section-analytics" class="nav-item">七、数据埋点</a>
+            <a href="#section-launch" class="nav-item">八、上线计划与灰度策略</a>
+            <a href="#section-roadmap" class="nav-item">九、未来演进规划</a>
+            <div class="nav-title" onclick="toggleSubMenu('menu-10')">十、附件：业务数据字典与工艺标准库</div>
+            <div id="menu-10" class="sub-menu">
+                <a href="#section-10-1" class="nav-item sub-item">10.1 业务数据字典（工序与主材）</a>
+                <a href="#section-10-2" class="nav-item sub-item">10.2 工艺做法与验收标准库</a>
+                <a href="#section-10-3" class="nav-item sub-item">10.3 综合提醒与特殊业务通知模板</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="content-area" id="content-area">
+        <!-- Documentation Text -->
+        <div class="doc-panel">
+            
+            <!-- 1. 项目信息 -->
+            <div id="section-info" class="doc-section">
+                <h1>📋 项目信息</h1>
+                <table>
+                    <tr>
+                        <th style="width: 120px;">字段</th>
+                        <th>内容</th>
+                    </tr>
+                    <tr>
+                        <td><strong>产品名称</strong></td>
+                        <td>品诺筑家 · 筑家云记 (ZhuJia Cloud)</td>
+                    </tr>
+                    <tr>
+                        <td><strong>版本定义</strong></td>
+                        <td>v1.0 MVP (最小可行性产品)</td>
+                    </tr>
+                    <tr>
+                        <td><strong>文档负责人</strong></td>
+                        <td>陈小于</td>
+                    </tr>
+                    <tr>
+                        <td><strong>核心目标</strong></td>
+                        <td>对内实现多项目精细化管控；对外建立高透明度的施工交付标准，消除信息断层。</td>
+                    </tr>
+                    <tr>
+                        <td><strong>原型设计</strong></td>
+                        <td>
+                            <button onclick="toggleGlobalPreview('login')" style="background: #000; color: #fff; border: none; padding: 6px 12px; border-radius: 4px; font-size: 12px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
+                                <i class="ri-smartphone-line"></i> 体验原型 <i class="ri-arrow-right-s-fill"></i>
+                            </button>
+                        </td>
+                    </tr>
+                </table>
+
+                <h1>📝 版本记录</h1>
+                <table>
+                    <tr>
+                        <th>日期</th>
+                        <th>版本号</th>
+                        <th>修改内容</th>
+                        <th>修改人</th>
+                    </tr>
+                    <tr>
+                        <td>2026-03-19</td>
+                        <td>v1.0</td>
+                        <td>需求方案定稿，补充进度排期高级逻辑与交互细节</td>
+                        <td>陈小于</td>
+                    </tr>
+                    <tr>
+                        <td>2026-03-15</td>
+                        <td>v0.5</td>
+                        <td>初稿，确立双端角色架构与核心功能模块</td>
+                        <td>陈小于</td>
+                    </tr>
+                </table>
+            </div>
+
+            <!-- 2. 问题定义与边界 -->
+            <div id="section-background" class="doc-section">
+                <h1>一、问题定义与边界</h1>
+                
+                <h2>1.1 组织与沟通现状</h2>
+                <ul>
+                    <li><strong>企业规模：</strong> 20–30 人的传统家装公司，组织精简。</li>
+                    <li><strong>部门结构：</strong> 设计部、销售部、项目部、财务部。</li>
+                    <li><strong>协作方式：</strong> 以微信群为主，通知、图片、文件分散，易丢失、难追溯。</li>
+                    <li><strong>现场到信息链：</strong> 现场→项目经理拍照→微信群→业主/设计协同，缺乏标准化与留痕。</li>
+                </ul>
+
+                <h2>1.2 待解决的关键问题</h2>
+                <ul>
+                    <li><strong>信息碎片化：</strong> 微信对话沉底，关键节点与文件难以检索与复用。</li>
+                    <li><strong>进度不透明：</strong> 业主无清晰节点与预计完工时间，焦虑感强。</li>
+                    <li><strong>材料环节纠纷：</strong> 型号、数量、时点佐证不足，易引发争议。</li>
+                    <li><strong>多工地管控难：</strong> 项目经理跨工地排期冲突与延期联动管理缺失。</li>
+                </ul>
+
+                <h2>1.3 渠道选择（为何小程序）</h2>
+                <ul>
+                    <li><strong>触达成本低：</strong> 团队与业主已在微信生态，免安装、免学习成本。</li>
+                    <li><strong>社群联动：</strong> 与微信群天然联动，系统通知可“同步到群”。</li>
+                    <li><strong>移动现场友好：</strong> 轻量、弱网友好，利于拍照上传与断点续传。</li>
+                    <li><strong>可渐进扩展：</strong> 先跑闭环，后扩 H5/后台管理。</li>
+                </ul>
+
+                <h2>1.4 角色与职责</h2>
+                <table>
+                    <tr>
+                        <th>角色</th>
+                        <th>核心目标</th>
+                        <th>主要任务</th>
+                        <th>关键指标</th>
+                    </tr>
+                    <tr>
+                        <td>业主</td>
+                        <td>随时掌握进度，放心省心</td>
+                        <td>查看日志、确认材料、反馈问题</td>
+                        <td>日志阅读率、反馈响应时效</td>
+                    </tr>
+                    <tr>
+                        <td>项目经理/工长</td>
+                        <td>多工地统筹，标准化交付</td>
+                        <td>发布日报、排期联动、材料核验</td>
+                        <td>日报覆盖率、延期率、处理闭环率</td>
+                    </tr>
+                    <tr>
+                        <td>设计师</td>
+                        <td>效果还原与变更控制</td>
+                        <td>节点图纸与变更说明对齐</td>
+                        <td>变更次数、复工率</td>
+                    </tr>
+                    <tr>
+                        <td>销售</td>
+                        <td>转化与口碑</td>
+                        <td>跟单、引导使用“成长播报”</td>
+                        <td>转介绍率</td>
+                    </tr>
+                    <tr>
+                        <td>财务</td>
+                        <td>里程碑节点对账</td>
+                        <td>按合同节点跟进收款提醒</td>
+                        <td>回款及时率</td>
+                    </tr>
+                </table>
+
+                
+
+            <!-- 目标与衡量 -->
+            <div id="section-objectives" class="doc-section">
+                <h1>二、目标与衡量</h1>
+                <h2>2.1 目标体系</h2>
+                <table>
+                    <tr>
+                        <th>目标类型</th>
+                        <th>描述</th>
+                        <th>衡量指标</th>
+                        <th>目标值</th>
+                    </tr>
+                    <tr>
+                        <td>核心目标</td>
+                        <td>建立标准化的在线施工播报与进度追踪体系，让业主能实时查看新家变化</td>
+                        <td>业主端周活率 (WAU)</td>
+                        <td>> 80%</td>
+                    </tr>
+                    <tr>
+                        <td>核心目标</td>
+                        <td>提升项目经理多工地管理效率，规范化资料与排期流转</td>
+                        <td>单项目平均线上沟通耗时缩减</td>
+                        <td>降低 30%</td>
+                    </tr>
+                    <tr>
+                        <td>次要目标</td>
+                        <td>利用邀请码机制，将“装修日记”辐射至业主家庭其他成员，形成私域资产</td>
+                        <td>单项目平均绑定业主数</td>
+                        <td>≥ 2.5人</td>
+                    </tr>
+                </table>
+                <h2>2.2 成功验收标准与边界</h2>
+                <ul>
+                    <li><strong>日报覆盖率：</strong> 核心在建项目日报覆盖 ≥ 90%</li>
+                    <li><strong>反馈闭环：</strong> 业主反馈 24 小时内闭环 ≥ 95%</li>
+                    <li><strong>材料确认：</strong> 线上确认率 ≥ 80%，异常分支有闭环记录</li>
+                    <li><strong>非目标：</strong> 不含 ERP 全量财务/采购，不做商城交易闭环</li>
+                </ul>
+                <h2>2.3 用户价值</h2>
+                <ul>
+                    <li><strong>业主：</strong> 随时查看新家进度，减少焦虑，重要决策有据可查。</li>
+                    <li><strong>员工：</strong> 多工地统筹，排期与材料节点标准化，减少沟通损耗。</li>
+                </ul>
+            </div>
+
+            <!-- 用户与场景 -->
+            <div id="section-goals" class="doc-section">
+                <h1>三、用户使用场景与旅程图</h1>
+                
+                <h2>2.1 项目经理 (员工端) 用户旅程</h2>
+                <table>
+                    <tr>
+                        <th>阶段</th>
+                        <th>用户目标</th>
+                        <th>触点 / 场景</th>
+                        <th>痛点 / 挑战</th>
+                        <th>系统解决方案</th>
+                    </tr>
+                    <tr>
+                        <td><strong>开工准备</strong></td>
+                        <td>快速建档，分配任务</td>
+                        <td>现场建群，核对信息</td>
+                        <td>工地多，容易记错信息</td>
+                        <td>新工地建档，一键生成数字化施工档案</td>
+                    </tr>
+                    <tr>
+                        <td><strong>施工过程</strong></td>
+                        <td>按时汇报，避免延误</td>
+                        <td>每日去不同工地巡查拍照</td>
+                        <td>多工地排期混乱，业主频繁催问</td>
+                        <td>工地监控大盘、结构化施工日报、进度计划表自动顺延</td>
+                    </tr>
+                    <tr>
+                        <td><strong>材料进场</strong></td>
+                        <td>验收材料，确保无误</td>
+                        <td>现场等材料，对单子</td>
+                        <td>纸质单据易丢，业主不在场难确认</td>
+                        <td>主材到场管控，拍照核验并同步业主端</td>
+                    </tr>
+                    <tr>
+                        <td><strong>售后反馈</strong></td>
+                        <td>解答疑问，安抚业主</td>
+                        <td>微信群内回复信息</td>
+                        <td>消息容易被刷走，记录难追溯</td>
+                        <td>反馈处理中心，集中处理咨询</td>
+                    </tr>
+                </table>
+
+                <h2>2.2 业主 (业主端) 用户旅程</h2>
+                <table>
+                    <tr>
+                        <th>阶段</th>
+                        <th>用户目标</th>
+                        <th>触点 / 场景</th>
+                        <th>痛点 / 挑战</th>
+                        <th>系统解决方案</th>
+                    </tr>
+                    <tr>
+                        <td><strong>项目启动</strong></td>
+                        <td>了解施工团队，建立信任</td>
+                        <td>签订合同，进入微信群</td>
+                        <td>不清楚施工标准，心里没底</td>
+                        <td>输入邀请码绑定项目，查看工艺标准库</td>
+                    </tr>
+                    <tr>
+                        <td><strong>施工跟进</strong></td>
+                        <td>随时了解进度，确认材料</td>
+                        <td>下班后或者周末去工地</td>
+                        <td>没时间去现场，看不懂进度</td>
+                        <td>新家成长播报、可视化进度看板、透明材料清单</td>
+                    </tr>
+                    <tr>
+                        <td><strong>验收交付</strong></td>
+                        <td>确认质量，安心入住</td>
+                        <td>现场节点验收</td>
+                        <td>对隐蔽工程不放心，资料难保存</td>
+                        <td>数字化档案室，长久保存图纸与施工记录</td>
+                    </tr>
+                </table>
+            </div>
+
+            <!-- 3. 需求概述 -->
+            <div id="section-overview" class="doc-section">
+                <h1>三、需求功能清单</h1>
+                
+                <h2 id="section-3-1">3.1 公共基础模块</h2>
+                <p><strong>定位：</strong> 支撑双端运行的基础设施，确保用户识别与交互一致性。</p>
+                <table>
+                    <tr>
+                        <th style="width: 20%;">功能点</th>
+                        <th style="width: 50%;">描述</th>
+                        <th style="width: 15%;">优先级</th>
+                        <th style="width: 15%;">状态</th>
+                    </tr>
+                    <tr>
+                        <td><strong>身份选择与验证</strong></td>
+                        <td>选择“业主”或“员工”身份，并输入对应的邀请码或管理口令进入项目。</td>
+                        <td><span class="tag p0">P0</span></td>
+                        <td><span class="tag new">新增</span></td>
+                    </tr>
+                    <tr>
+                        <td><strong>全局交互规范</strong></td>
+                        <td>统一样式弹窗、大图缩放查看器、操作反馈动画。</td>
+                        <td><span class="tag p0">P0</span></td>
+                        <td><span class="tag new">新增</span></td>
+                    </tr>
+                </table>
+
+                <h2 id="section-3-2">3.2 员工端：管理工作台</h2>
+                <p><strong>定位：</strong> 提效工具，解决项目经理“多工地监控”与“标准化交付”的痛点。</p>
+                <table>
+                    <tr>
+                        <th style="width: 20%;">功能点</th>
+                        <th style="width: 50%;">描述</th>
+                        <th style="width: 15%;">优先级</th>
+                        <th style="width: 15%;">状态</th>
+                    </tr>
+                    <tr>
+                        <td><strong>工地监控大盘</strong></td>
+                        <td>总览所有在建工地，支持按“在建项目、需关注、全部项目”快速筛选。</td>
+                        <td><span class="tag p0">P0</span></td>
+                        <td><span class="tag new">新增</span></td>
+                    </tr>
+                    <tr>
+                        <td><strong>新工地建档</strong></td>
+                        <td>录入项目地址、客户信息、房屋面积与开工日期，快速初始化数字化施工档案。</td>
+                        <td><span class="tag p0">P0</span></td>
+                        <td><span class="tag new">新增</span></td>
+                    </tr>
+                    <tr>
+                        <td><strong>结构化施工日报</strong></td>
+                        <td>核心功能：选择工序节点即自动匹配输出标准化验收文案，支持现场拍照实时上传。</td>
+                        <td><span class="tag p0">P0</span></td>
+                        <td><span class="tag new">新增</span></td>
+                    </tr>
+                    <tr>
+                        <td><strong>进度计划表</strong></td>
+                        <td>支持针对不同需求手动增删工序，调整单个节点工期后后续计划自动一键顺延。</td>
+                        <td><span class="tag p0">P0</span></td>
+                        <td><span class="tag new">新增</span></td>
+                    </tr>
+                    <tr>
+                        <td><strong>主材到场管控</strong></td>
+                        <td>登记主材到场时间并拍照核验，确保材料品牌、型号与合同一致。</td>
+                        <td><span class="tag p1">P1</span></td>
+                        <td><span class="tag new">新增</span></td>
+                    </tr>
+                    <tr>
+                        <td><strong>反馈处理中心</strong></td>
+                        <td>集中接收并回复业主在施工播报下的咨询与反馈，确保沟通有迹可循。</td>
+                        <td><span class="tag p1">P1</span></td>
+                        <td><span class="tag new">新增</span></td>
+                    </tr>
+                </table>
+
+                <h2 id="section-3-3">3.3 业主端：云监工平台</h2>
+                <p><strong>定位：</strong> 透明化窗口，解决业主“装修焦虑”与“信任缺失”，建立品牌口碑。</p>
+                <table>
+                    <tr>
+                        <th style="width: 20%;">功能点</th>
+                        <th style="width: 50%;">描述</th>
+                        <th style="width: 15%;">优先级</th>
+                        <th style="width: 15%;">状态</th>
+                    </tr>
+                    <tr>
+                        <td><strong>新家成长播报</strong></td>
+                        <td>采用瀑布流时间轴形式展示每日工地图文汇报以及验收节点汇报，业主可进行反馈。</td>
+                        <td><span class="tag p0">P0</span></td>
+                        <td><span class="tag new">新增</span></td>
+                    </tr>
+                    <tr>
+                        <td><strong>工艺标准库</strong></td>
+                        <td>独立的工艺标准库入口，展示公司全套施工工法、验收标准及主材规格。</td>
+                        <td><span class="tag p1">P1</span></td>
+                        <td><span class="tag new">新增</span></td>
+                    </tr>
+                    <tr>
+                        <td><strong>可视化进度看板</strong></td>
+                        <td>实时显示当前施工节点、已耗时长及预计完工天数，进度清晰可见。</td>
+                        <td><span class="tag p1">P1</span></td>
+                        <td><span class="tag new">新增</span></td>
+                    </tr>
+                    <tr>
+                        <td><strong>透明材料清单</strong></td>
+                        <td>进场材料全量照片存证，业主在线即可比对合同规格，实现材料环节透明交付。</td>
+                        <td><span class="tag p1">P1</span></td>
+                        <td><span class="tag new">新增</span></td>
+                    </tr>
+                    <tr>
+                        <td><strong>数字化档案室</strong></td>
+                        <td>集中存储合同协议、全套设计图纸、隐蔽工程照片，支持随时查看。</td>
+                        <td><span class="tag p2">P2</span></td>
+                        <td><span class="tag new">新增</span></td>
+                    </tr>
+                    <tr>
+                        <td><strong>个人信息定制</strong></td>
+                        <td>支持业主修改昵称、头像，增强系统归属感。</td>
+                        <td><span class="tag p2">P2</span></td>
+                        <td><span class="tag new">新增</span></td>
+                    </tr>
+                </table>
+            </div>
+
+            <!-- 4. 详细方案 -->
+            <div id="section-detail" class="doc-section">
+                <h1>四、详细方案</h1>
+                
+                <h2 id="section-4-1">4.1 公共基础模块</h2>
+                
+                <div class="feature-block" id="section-4-1-1">
+                    <div class="feature-desc">
+                        <h3>4.1.1 身份选择与验证 <span class="tag p0">P0</span></h3>
+                        <ul class="spec-list">
+                            <li class="spec-item">
+                                <div class="spec-label">功能说明</div>
+                                <div class="spec-content">选择“业主”或“员工”身份，并输入对应的邀请码或管理口令进入项目。</div>
+                            </li>
+                            <li class="spec-item">
+                                <div class="spec-label">1. 触发条件</div>
+                                <div class="spec-content">用户首次打开应用，或退出登录后。</div>
+                            </li>
+                            <li class="spec-item">
+                                <div class="spec-label">2. 展示规则</div>
+                                <div class="spec-content">
+                                    <ul>
+                                        <li>顶部展示品牌Slogan与Logo。</li>
+                                        <li>下方并排展示“我是业主”和“我是管理者”两个入口卡片。</li>
+                                    </ul>
+                                </div>
+                            </li>
+                            <li class="spec-item">
+                                <div class="spec-label">3. 交互逻辑</div>
+                                <div class="spec-content">
+                <div class="mermaid-container" style="padding: 16px; margin: 0;">
+                    <div class="mermaid">
+                        flowchart LR
+                            A["选择身份: 业主/员工"] --> B["弹出邀请码/管理码输入层"]
+                            B --> C{"输入是否有效"}
+                            C -- 有效 --> D{"身份类型"}
+                            D -- 业主 --> E["校验邀请码有效期/绑定次数"]
+                            D -- 员工 --> F["校验员工口令与企业权限"]
+                            E --> G["写入会话态并跳转业主首页"]
+                            F --> H["写入会话态并跳转工作台"]
+                            C -- 无效 --> I["标红输入框 + Toast 原因"]
+                            I --> B
+                            G --> J{"首次访问?"}
+                            J -- 是 --> K["引导关注项目群/开启通知"]
+                            J -- 否 --> L["进入首页"]
+                    </div>
+                </div>
+            </div>
+                            </li>
+                            <li class="spec-item">
+                                <div class="spec-label">4. 状态变化</div>
+                                <div class="spec-content">
+                                    <ul>
+                                        <li>默认状态：展示角色选择页面。</li>
+                                        <li>触发后状态：显示输入键盘及半屏模态框。</li>
+                                        <li>结束状态：成功进入项目详情/工作台页面。</li>
+                                    </ul>
+                                </div>
+                            </li>
+                        </ul>
+                        <blockquote class="important-note">
+                            <strong>[!IMPORTANT]</strong><br>
+                            ⚠️ 注意：业主邀请码按工地分配（一户一码），员工管理码仅限内部人员知晓，防范隐私泄露。
+                        </blockquote>
+                    </div>
+                    <div class="feature-demo">
+                        <div class="iphone-mockup">
+                            <div class="iphone-notch"></div>
+                            <div class="iphone-screen">
+                                <iframe class="iphone-iframe" src="../prototype/prototype_v1.0.html?sandbox=true#login"></iframe>
+                            </div>
+                        <div class="refresh-btn" onclick="const iframe = this.previousElementSibling.querySelector('iframe'); if(iframe.contentWindow){iframe.contentWindow.location.reload();}else{const src=iframe.src;iframe.src='';iframe.src=src;}" title="刷新原型">
+                                <i class="ri-refresh-line"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <h2 id="section-4-2">4.2 员工端：管理工作台</h2>
+
+                <div class="feature-block" id="section-4-2-1">
+                    <div class="feature-desc">
+                        <h3>4.2.1 工地监控大盘 <span class="tag p0">P0</span></h3>
+                        <ul class="spec-list">
+                            <li class="spec-item">
+                                <div class="spec-label">功能说明</div>
+                                <div class="spec-content">总览所有在建工地，支持按“在建项目、需关注、全部项目”快速筛选。显示项目名、当前阶段、地址、开工日期及进度条。</div>
+                            </li>
+                            <li class="spec-item">
+                                <div class="spec-label">1. 触发条件</div>
+                                <div class="spec-content">管理者成功登录后默认进入的主工作台页面。</div>
+                            </li>
+                            <li class="spec-item">
+                                <div class="spec-label">2. 展示规则</div>
+                                <div class="spec-content">
+                                    <ul>
+                                        <li>顶部为数据统计概览及分类Tab。</li>
+                                        <li>下方列表按项目开工时间倒序排列。</li>
+                                        <li>空状态展示“暂无项目”插图与“新建项目”按钮。</li>
+                                        <li>网络异常时在列表区域展示重试提示和按钮。</li>
+                                        <li>权限变更时拦截进入并提示重新登录/更换身份。</li>
+                                    </ul>
+                                </div>
+                            </li>
+                            <li class="spec-item">
+                                <div class="spec-label">3. 交互逻辑</div>
+                                <div class="spec-content">
+                <div class="mermaid-container" style="padding: 16px; margin: 0; min-height: 210px;">
+                    <div class="mermaid">
+                        flowchart LR
+                            A["点击筛选 Tab"] --> B["更新查询条件"];
+                            B --> C["发起接口请求 (debounce 300ms)"];
+                            C --> D{"返回是否为空"};
+                            D -->|否| E["渲染列表并计算进度条"];
+                            D -->|是| F["显示空状态 + 新建引导"];
+                            E --> G["点击项目卡片"];
+                            G --> H{"权限校验"};
+                            H -->|通过| I["跳转项目详情面板"];
+                            H -->|拒绝| J["提示权限变更，返回登录"];
+                            C --> X{"请求失败?"};
+                            X -->|是| Y["提示网络异常/重试"];
+                            F --> Z["点击新建项目"];
+                            Z --> N1["跳转建档表单"];
+                    </div>
+                </div>
+            </div>
+                            </li>
+                            <li class="spec-item">
+                                <div class="spec-label">4. 状态变化</div>
+                                <div class="spec-content">
+                                    <ul>
+                                        <li>默认状态：显示全部在建项目。</li>
+                                        <li>触发后状态：显示特定筛选结果。</li>
+                                        <li>结束状态：进入特定项目内页。</li>
+                                    </ul>
+                                </div>
+                            </li>
+                        </ul>
+                        <blockquote class="important-note">
+                            <strong>[!IMPORTANT]</strong><br>
+                            ⚠️ 进度条数据需实时读取工序节点的完成状态。
+                        </blockquote>
+                    </div>
+                    <div class="feature-demo">
+                        <div class="iphone-mockup">
+                            <div class="iphone-notch"></div>
+                            <div class="iphone-screen">
+                                <iframe class="iphone-iframe" src="../prototype/prototype_v1.0.html?sandbox=true&role=staff#hall"></iframe>
+                            </div>
+                        <div class="refresh-btn" onclick="const iframe = this.previousElementSibling.querySelector('iframe'); if(iframe.contentWindow){iframe.contentWindow.location.reload();}else{const src=iframe.src;iframe.src='';iframe.src=src;}" title="刷新原型">
+                                <i class="ri-refresh-line"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="feature-block" id="section-4-2-2">
+                    <div class="feature-desc">
+                        <h3>4.2.2 新工地建档 <span class="tag p0">P0</span></h3>
+                        <ul class="spec-list">
+                            <li class="spec-item">
+                                <div class="spec-label">功能说明</div>
+                                <div class="spec-content">录入项目地址、客户信息、房屋面积与开工日期，快速初始化数字化施工档案。并支持批量导入施工节点。</div>
+                            </li>
+                            <li class="spec-item">
+                                <div class="spec-label">1. 触发条件</div>
+                                <div class="spec-content">管理者在工作台点击“新建项目”按钮。</div>
+                            </li>
+                            <li class="spec-item">
+                                <div class="spec-label">2. 展示规则</div>
+                                <div class="spec-content">
+                                    <ul>
+                                        <li>分步式或长表单形式展示输入项，必填项需标红。</li>
+                                        <li>提交按钮固定在屏幕底部。</li>
+                                    </ul>
+                                </div>
+                            </li>
+                            <li class="spec-item">
+                                <div class="spec-label">3. 交互逻辑</div>
+                                <div class="spec-content">
+                <div class="mermaid-container" style="padding: 16px; margin: 0; min-height: 210px;">
+                    <div class="mermaid">
+                        flowchart LR
+                            A["填写表单"] --> B["点击提交"]
+                            B --> C{"系统校验字段"}
+                            C -- 成功 --> D["创建档案并跳转至新项目首页"]
+                            C -- 失败 --> E["提示必填项未完成"]
+                    </div>
+                </div>
+            </div>
+                            </li>
+                            <li class="spec-item">
+                                <div class="spec-label">4. 状态变化</div>
+                                <div class="spec-content">
+                                    <ul>
+                                        <li>默认状态：空白表单。</li>
+                                        <li>触发后状态：表单校验提示。</li>
+                                        <li>结束状态：建档完成。</li>
+                                    </ul>
+                                </div>
+                            </li>
+                        </ul>
+                        <blockquote class="important-note">
+                            <strong>[!IMPORTANT]</strong><br>
+                            ⚠️ 批量导入施工节点需自动根据开工日期推算后续时间。
+                        </blockquote>
+                    </div>
+                    <div class="feature-demo">
+                        <div class="iphone-mockup">
+                            <div class="iphone-notch"></div>
+                            <div class="iphone-screen">
+                                <iframe class="iphone-iframe" src="../prototype/prototype_v1.0.html?sandbox=true&role=staff#new-project"></iframe>
+                            </div>
+                        <div class="refresh-btn" onclick="const iframe = this.previousElementSibling.querySelector('iframe'); if(iframe.contentWindow){iframe.contentWindow.location.reload();}else{const src=iframe.src;iframe.src='';iframe.src=src;}" title="刷新原型">
+                                <i class="ri-refresh-line"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="feature-block" id="section-4-2-3">
+                    <div class="feature-desc">
+                        <h3>4.2.3 结构化施工日报 <span class="tag p0">P0</span></h3>
+                        <ul class="spec-list">
+                            <li class="spec-item">
+                                <div class="spec-label">功能说明</div>
+                                <div class="spec-content">选择工序节点自动匹配标准化验收文案，支持现场拍照上传。</div>
+                            </li>
+                            <li class="spec-item">
+                                <div class="spec-label">1. 触发条件</div>
+                                <div class="spec-content">在项目详情页点击“写汇报”或“验收汇报”。</div>
+                            </li>
+                            <li class="spec-item">
+                                <div class="spec-label">2. 展示规则</div>
+                                <div class="spec-content">
+                                    <ul>
+                                        <li>顶部选择相关工序标签。</li>
+                                        <li>自动填充相关施工标准与验收结果模板。</li>
+                                        <li>底部提供图片上传九宫格。</li>
+                                        <li>上传前对图片进行本地压缩并叠加时间水印。</li>
+                                        <li>支持草稿保存，未发布的内容在入口处展示“草稿”标识。</li>
+                                    </ul>
+                                </div>
+                            </li>
+                            <li class="spec-item">
+                                <div class="spec-label">3. 交互逻辑</div>
+                                <div class="spec-content">
+                <div class="mermaid-container" style="padding: 16px; margin: 0; min-height: 210px;">
+                    <div class="mermaid">
+                        flowchart LR
+                            A["选择工序标签"] --> B["自动插入标准模板"];
+                            B --> C["补充文本说明"];
+                            C --> D["添加图片 (本地压缩/时间水印)"];
+                            D --> E["点击发布"];
+                            E --> F{"表单校验"};
+                            F -->|通过| G["直传 OSS 获取 URL"];
+                            G --> H["保存日志并触发推送"];
+                            H --> I["返回动态并定位到新日志"];
+                            F -->|不通过| J["标红缺失项并提示原因"];
+                            G --> K{"上传失败?"};
+                            K -->|是| L["保存草稿并提示重试"];
+                            L --> E;
+                    </div>
+                </div>
+            </div>
+                            </li>
+                            <li class="spec-item">
+                                <div class="spec-label">4. 状态变化</div>
+                                <div class="spec-content">
+                                    <ul>
+                                        <li>默认状态：空表单。</li>
+                                        <li>触发后状态：自动填充文本，显示已选图片。</li>
+                                        <li>结束状态：发布成功并返回首页。</li>
+                                    </ul>
+                                </div>
+                            </li>
+                        </ul>
+                        <blockquote class="important-note">
+                            <strong>[!IMPORTANT]</strong><br>
+                            ⚠️ 图片必须支持水印时间戳，防止后期纠纷。
+                        </blockquote>
+                    </div>
+                    <div class="feature-demo">
+                        <div class="iphone-mockup">
+                            <div class="iphone-notch"></div>
+                            <div class="iphone-screen">
+                                <iframe class="iphone-iframe" src="../prototype/prototype_v1.0.html?sandbox=true&role=staff#write-report"></iframe>
+                            </div>
+                        <div class="refresh-btn" onclick="const iframe = this.previousElementSibling.querySelector('iframe'); if(iframe.contentWindow){iframe.contentWindow.location.reload();}else{const src=iframe.src;iframe.src='';iframe.src=src;}" title="刷新原型">
+                                <i class="ri-refresh-line"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="feature-block" id="section-4-2-4">
+                    <div class="feature-desc">
+                        <h3>4.2.4 进度计划表 <span class="tag p0">P0</span></h3>
+                        <ul class="spec-list">
+                            <li class="spec-item">
+                                <div class="spec-label">功能说明</div>
+                                <div class="spec-content">针对不同需求手动增删工序，调整单个节点工期后后续计划自动顺延。</div>
+                            </li>
+                            <li class="spec-item">
+                                <div class="spec-label">1. 触发条件</div>
+                                <div class="spec-content">在项目详情页点击“进度管理”进入计划表。</div>
+                            </li>
+                            <li class="spec-item">
+                                <div class="spec-label">2. 展示规则</div>
+                                <div class="spec-content">
+                                    <ul>
+                                        <li>按时间轴顺序排列所有节点。</li>
+                                        <li>显示每个节点的开始、结束时间及状态（未开始、进行中、已延期）。</li>
+                                    </ul>
+                                </div>
+                            </li>
+                            <li class="spec-item">
+                                <div class="spec-label">3. 交互逻辑</div>
+                                <div class="spec-content">
+                <div class="mermaid-container" style="padding: 16px; margin: 0; min-height: 210px;">
+                    <div class="mermaid">
+                        flowchart LR
+                            A["点击节点日期"] --> B["唤起日期选择器"]
+                            B --> C["选择新日期"]
+                            C --> D{"是否早于前置?"}
+                            D -- 是 --> E["阻止提交, 提示需先调整前置"]
+                            D -- 否 --> F{"是否跨越后置?"}
+                            F -- 是 --> G["弹窗: 是否联动顺延后续"]
+                            G -- 确认 --> H["重新计算后续开始/结束"]
+                            G -- 取消 --> I["仅更新当前, 标记风险"]
+                            F -- 否 --> J["直接更新当前节点"]
+                            H --> K["保存成功, 重绘甘特"]
+                            I --> K
+                            J --> K
+                    </div>
+                </div>
+            </div>
+                            </li>
+                            <li class="spec-item">
+                                <div class="spec-label">4. 状态变化</div>
+                                <div class="spec-content">
+                                    <ul>
+                                        <li>默认状态：展示当前进度。</li>
+                                        <li>触发后状态：显示日期选择器及冲突弹窗。</li>
+                                        <li>结束状态：保存成功，整体计划更新。</li>
+                                    </ul>
+                                </div>
+                            </li>
+                        </ul>
+                        <blockquote class="important-note">
+                            <strong>[!IMPORTANT]</strong><br>
+                            ⚠️ 自动顺延逻辑：后续节点的开始时间 = 前置节点的结束时间 + 1。
+                        </blockquote>
+                    </div>
+                    <div class="feature-demo">
+                        <div class="iphone-mockup">
+                            <div class="iphone-notch"></div>
+                            <div class="iphone-screen">
+                                <iframe class="iphone-iframe" src="../prototype/prototype_v1.0.html?sandbox=true&role=staff#progress"></iframe>
+                            </div>
+                        <div class="refresh-btn" onclick="const iframe = this.previousElementSibling.querySelector('iframe'); if(iframe.contentWindow){iframe.contentWindow.location.reload();}else{const src=iframe.src;iframe.src='';iframe.src=src;}" title="刷新原型">
+                                <i class="ri-refresh-line"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="feature-block" id="section-4-2-5">
+                    <div class="feature-desc">
+                        <h3>4.2.5 主材到场管控 <span class="tag p1">P1</span></h3>
+                        <ul class="spec-list">
+                            <li class="spec-item">
+                                <div class="spec-label">功能说明</div>
+                                <div class="spec-content">登记主材到场时间并拍照核验，确保材料品牌、型号与合同一致。</div>
+                            </li>
+                            <li class="spec-item">
+                                <div class="spec-label">1. 触发条件</div>
+                                <div class="spec-content">项目详情页点击“材料清单”。</div>
+                            </li>
+                            <li class="spec-item">
+                                <div class="spec-label">2. 展示规则</div>
+                                <div class="spec-content">
+                                    <ul>
+                                        <li>列表展示各项材料的当前状态（待进场、已进场）。</li>
+                                        <li>每项材料显示预定品牌、型号规格。</li>
+                                        <li>进入核验前先行校验型号/清晰度，异常项标红并提示。</li>
+                                        <li>业主确认状态在卡片上以标签形式可见（已确认/驳回）。</li>
+                                    </ul>
+                                </div>
+                            </li>
+                            <li class="spec-item">
+                                <div class="spec-label">3. 交互逻辑</div>
+                                <div class="spec-content">
+                <div class="mermaid-container" style="padding: 16px; margin: 0; min-height: 210px;">
+                    <div class="mermaid">
+                        flowchart LR
+                            A["点击“确认进场”"] --> B["弹出上传实拍图对话框"]
+                            B --> C["上传图片并提交"]
+                            C --> D{"图片/型号校验"}
+                            D -- 通过 --> E["状态变更为“已进场”"]
+                            E --> F["同步通知业主"]
+                            D -- 不通过 --> G["标记异常并退回补充"]
+                            F --> H{"业主确认?"}
+                            H -- 确认 --> I["闭环, 进入安装待办"]
+                            H -- 驳回 --> J["异常: 要求复检/退换"]
+                    </div>
+                </div>
+            </div>
+                            </li>
+                            <li class="spec-item">
+                                <div class="spec-label">4. 状态变化</div>
+                                <div class="spec-content">
+                                    <ul>
+                                        <li>默认状态：待进场列表。</li>
+                                        <li>触发后状态：核验表单页面。</li>
+                                        <li>结束状态：已进场，带实拍图存证。</li>
+                                    </ul>
+                                </div>
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="feature-demo">
+                        <div class="iphone-mockup">
+                            <div class="iphone-notch"></div>
+                            <div class="iphone-screen">
+                                <iframe class="iphone-iframe" src="../prototype/prototype_v1.0.html?sandbox=true&role=staff#materials"></iframe>
+                            </div>
+                        <div class="refresh-btn" onclick="const iframe = this.previousElementSibling.querySelector('iframe'); if(iframe.contentWindow){iframe.contentWindow.location.reload();}else{const src=iframe.src;iframe.src='';iframe.src=src;}" title="刷新原型">
+                                <i class="ri-refresh-line"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="feature-block" id="section-4-2-6">
+                    <div class="feature-desc">
+                        <h3>4.2.6 反馈处理中心 <span class="tag p1">P1</span></h3>
+                        <ul class="spec-list">
+                            <li class="spec-item">
+                                <div class="spec-label">功能说明</div>
+                                <div class="spec-content">集中接收并回复业主在施工播报下的咨询与反馈，确保沟通有迹可循。</div>
+                            </li>
+                            <li class="spec-item">
+                                <div class="spec-label">1. 触发条件</div>
+                                <div class="spec-content">工作台底栏点击“消息/反馈”。</div>
+                            </li>
+                            <li class="spec-item">
+                                <div class="spec-label">2. 展示规则</div>
+                                <div class="spec-content">
+                                    <ul>
+                                        <li>按未读消息和处理状态分类。</li>
+                                        <li>每条消息附带其对应的施工日志上下文。</li>
+                                        <li>支持“转派负责人/挂起/已解决”状态切换与筛选。</li>
+                                    </ul>
+                                </div>
+                            </li>
+                            <li class="spec-item">
+                                <div class="spec-label">3. 交互逻辑</div>
+                                <div class="spec-content">
+                <div class="mermaid-container" style="padding: 16px; margin: 0; min-height: 210px;">
+                    <div class="mermaid">
+                        flowchart LR
+                            A["点击消息"] --> B["展开详情"]
+                            B --> C["输入文字并回复"]
+                            B --> D["转派负责人"]
+                            B --> E["标记为挂起/待业主反馈"]
+                            C --> F["标记已解决"]
+                            F --> G["消息归档"]
+                    </div>
+                </div>
+            </div>
+                            </li>
+                            <li class="spec-item">
+                                <div class="spec-label">4. 状态变化</div>
+                                <div class="spec-content">
+                                    <ul>
+                                        <li>默认状态：未处理列表。</li>
+                                        <li>触发后状态：对话窗口。</li>
+                                        <li>结束状态：消息标记为已处理。</li>
+                                    </ul>
+                                </div>
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="feature-demo">
+                        <div class="iphone-mockup">
+                            <div class="iphone-notch"></div>
+                            <div class="iphone-screen">
+                                <iframe class="iphone-iframe" src="../prototype/prototype_v1.0.html?sandbox=true&role=staff#info"></iframe>
+                            </div>
+                        <div class="refresh-btn" onclick="const iframe = this.previousElementSibling.querySelector('iframe'); if(iframe.contentWindow){iframe.contentWindow.location.reload();}else{const src=iframe.src;iframe.src='';iframe.src=src;}" title="刷新原型">
+                                <i class="ri-refresh-line"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <h2 id="section-4-3">4.3 业主端：云监工平台</h2>
+
+                <div class="feature-block" id="section-4-3-1">
+                    <div class="feature-desc">
+                        <h3>4.3.1 新家成长播报 <span class="tag p0">P0</span></h3>
+                        <ul class="spec-list">
+                            <li class="spec-item">
+                                <div class="spec-label">功能说明</div>
+                                <div class="spec-content">采用瀑布流时间轴形式展示每日工地图文汇报以及验收节点汇报，业主可进行反馈。</div>
+                            </li>
+                            <li class="spec-item">
+                                <div class="spec-label">1. 触发条件</div>
+                                <div class="spec-content">业主登录后默认进入首页查看。</div>
+                            </li>
+                            <li class="spec-item">
+                                <div class="spec-label">2. 展示规则</div>
+                                <div class="spec-content">
+                                    <ul>
+                                        <li>动态卡片按时间倒序排列，包含图文、标签。</li>
+                                        <li>单卡片多图支持左右滑动查看。</li>
+                                        <li>工艺标准标签可直达对应百科文章。</li>
+                                    </ul>
+                                </div>
+                            </li>
+                            <li class="spec-item">
+                                <div class="spec-label">3. 交互逻辑</div>
+                                <div class="spec-content">
+                <div class="mermaid-container" style="padding: 16px; margin: 0; min-height: 210px;">
+                    <div class="mermaid">
+                        flowchart LR
+                            A["浏览动态"] --> B["点击图片查看大图"]
+                            A --> C["点击工艺标准标签"]
+                            C --> D["打开关联工艺文章"]
+                            A --> E["点击反馈图标"]
+                            E --> F["展开输入框并提交"]
+                            F --> G["管理端收到通知"]
+                            B --> H["左右切换图片/下滑退出"]
+                    </div>
+                </div>
+            </div>
+                            </li>
+                            <li class="spec-item">
+                                <div class="spec-label">4. 状态变化</div>
+                                <div class="spec-content">
+                                    <ul>
+                                        <li>默认状态：浏览动态瀑布流。</li>
+                                        <li>触发后状态：唤起系统键盘及输入层。</li>
+                                        <li>结束状态：动态下方新增留言展示。</li>
+                                    </ul>
+                                </div>
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="feature-demo">
+                        <div class="iphone-mockup">
+                            <div class="iphone-notch"></div>
+                            <div class="iphone-screen">
+                                <iframe class="iphone-iframe" src="../prototype/prototype_v1.0.html?sandbox=true&role=owner#moments"></iframe>
+                            </div>
+                        <div class="refresh-btn" onclick="const iframe = this.previousElementSibling.querySelector('iframe'); if(iframe.contentWindow){iframe.contentWindow.location.reload();}else{const src=iframe.src;iframe.src='';iframe.src=src;}" title="刷新原型">
+                                <i class="ri-refresh-line"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="feature-block" id="section-4-3-2">
+                    <div class="feature-desc">
+                        <h3>4.3.2 工艺标准库 <span class="tag p1">P1</span></h3>
+                        <ul class="spec-list">
+                            <li class="spec-item">
+                                <div class="spec-label">功能说明</div>
+                                <div class="spec-content">展示公司全套施工工法、验收标准及主材规格。在施工日志中自动展示对应科普。</div>
+                            </li>
+                            <li class="spec-item">
+                                <div class="spec-label">1. 触发条件</div>
+                                <div class="spec-content">点击动态卡片上的“工艺标准”标签，或从底部导航进入“百科”。</div>
+                            </li>
+                            <li class="spec-item">
+                                <div class="spec-label">2. 展示规则</div>
+                                <div class="spec-content">
+                                    <ul>
+                                        <li>以图文并茂的文章形式展示，重点突出“对比同行”差异。</li>
+                                        <li>从日志标签进入时高亮来源并可一键返回。</li>
+                                    </ul>
+                                </div>
+                            </li>
+                            <li class="spec-item">
+                                <div class="spec-label">3. 交互逻辑</div>
+                                <div class="spec-content">
+                <div class="mermaid-container" style="padding: 16px; margin: 0; min-height: 210px;">
+                    <div class="mermaid">
+                        flowchart LR
+                            A["入口选择"] --> B{"来自日志标签?"}
+                            B -- 是 --> C["打开关联工艺条目"]
+                            B -- 否 --> D["从百科首页进入"]
+                            C --> E["上下滑阅读/目录导航"]
+                            D --> E
+                            E --> F["点击图片查看大图"]
+                            E --> G["收藏/加入学习清单"]
+                            E --> H["返回上一级"]
+                    </div>
+                </div>
+            </div>
+                            </li>
+                            <li class="spec-item">
+                                <div class="spec-label">4. 状态变化</div>
+                                <div class="spec-content">
+                                    <ul>
+                                        <li>默认状态：工艺列表或直接从日志进入详情。</li>
+                                        <li>触发后状态：全屏阅读文章。</li>
+                                        <li>结束状态：返回上一级。</li>
+                                    </ul>
+                                </div>
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="feature-demo">
+                        <div class="iphone-mockup">
+                            <div class="iphone-notch"></div>
+                            <div class="iphone-screen">
+                                <iframe class="iphone-iframe" src="../prototype/prototype_v1.0.html?sandbox=true&role=owner#standards"></iframe>
+                            </div>
+                        <div class="refresh-btn" onclick="const iframe = this.previousElementSibling.querySelector('iframe'); if(iframe.contentWindow){iframe.contentWindow.location.reload();}else{const src=iframe.src;iframe.src='';iframe.src=src;}" title="刷新原型">
+                                <i class="ri-refresh-line"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="feature-block" id="section-4-3-3">
+                    <div class="feature-desc">
+                        <h3>4.3.3 可视化进度看板 <span class="tag p1">P1</span></h3>
+                        <ul class="spec-list">
+                            <li class="spec-item">
+                                <div class="spec-label">功能说明</div>
+                                <div class="spec-content">实时显示当前施工节点、已耗时长及预计完工天数，进度清晰可见。</div>
+                            </li>
+                            <li class="spec-item">
+                                <div class="spec-label">1. 触发条件</div>
+                                <div class="spec-content">点击底部导航“进度”。</div>
+                            </li>
+                            <li class="spec-item">
+                                <div class="spec-label">2. 展示规则</div>
+                                <div class="spec-content">
+                                    <ul>
+                                        <li>环形图展示整体进度百分比。</li>
+                                        <li>垂直时间轴展示大节点（水电、泥木等）及子工序。</li>
+                                        <li>进行中/延期节点显示预计/实际耗时与风险标记。</li>
+                                    </ul>
+                                </div>
+                            </li>
+                            <li class="spec-item">
+                                <div class="spec-label">3. 交互逻辑</div>
+                                <div class="spec-content">
+                <div class="mermaid-container" style="padding: 16px; margin: 0; min-height: 210px;">
+                    <div class="mermaid">
+                        flowchart LR
+                            A["进度总览"] --> B["点击已完成节点"]
+                            B --> C["展开验收图片与详情"]
+                            A --> D["点击进行中节点"]
+                            D --> E["查看预计/实际耗时与风险提示"]
+                            A --> F["点击延期节点"]
+                            F --> G["查看延期原因与影响范围"]
+                            G --> H["跳转到相关日志/整改说明"]
+                    </div>
+                </div>
+            </div>
+                            </li>
+                            <li class="spec-item">
+                                <div class="spec-label">4. 状态变化</div>
+                                <div class="spec-content">
+                                    <ul>
+                                        <li>默认状态：总览页面。</li>
+                                        <li>触发后状态：展开内嵌面板。</li>
+                                    </ul>
+                                </div>
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="feature-demo">
+                        <div class="iphone-mockup">
+                            <div class="iphone-notch"></div>
+                            <div class="iphone-screen">
+                                <iframe class="iphone-iframe" src="../prototype/prototype_v1.0.html?sandbox=true&role=owner#progress"></iframe>
+                            </div>
+                        <div class="refresh-btn" onclick="const iframe = this.previousElementSibling.querySelector('iframe'); if(iframe.contentWindow){iframe.contentWindow.location.reload();}else{const src=iframe.src;iframe.src='';iframe.src=src;}" title="刷新原型">
+                                <i class="ri-refresh-line"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="feature-block" id="section-4-3-4">
+                    <div class="feature-desc">
+                        <h3>4.3.4 透明材料清单 <span class="tag p1">P1</span></h3>
+                        <ul class="spec-list">
+                            <li class="spec-item">
+                                <div class="spec-label">功能说明</div>
+                                <div class="spec-content">进场材料全量照片存证，业主在线即可比对合同规格，实现材料环节透明交付。</div>
+                            </li>
+                            <li class="spec-item">
+                                <div class="spec-label">1. 触发条件</div>
+                                <div class="spec-content">点击底部导航“材料”。</div>
+                            </li>
+                            <li class="spec-item">
+                                <div class="spec-label">2. 展示规则</div>
+                                <div class="spec-content">
+                                    <ul>
+                                        <li>列表分为“已进场”与“待进场”两个Tab。</li>
+                                        <li>每项包含品牌名称、数量及现场实拍图。</li>
+                                        <li>业主确认进度以不同颜色标签标识。</li>
+                                    </ul>
+                                </div>
+                            </li>
+                            <li class="spec-item">
+                                <div class="spec-label">3. 交互逻辑</div>
+                                <div class="spec-content">
+                <div class="mermaid-container" style="padding: 16px; margin: 0; min-height: 210px;">
+                    <div class="mermaid">
+                        flowchart LR
+                            A["浏览材料清单"] --> B["筛选 已进场/待进场"]
+                            A --> C["点击材料图片"]
+                            C --> D["放大查看型号/贴纸细节"]
+                            A --> E["点击“确认进场”"]
+                            E --> F{"业主确认?"}
+                            F -- 确认 --> G["状态更新为已确认"]
+                            F -- 驳回 --> H["反馈问题并通知项目经理"]
+                    </div>
+                </div>
+            </div>
+                            </li>
+                            <li class="spec-item">
+                                <div class="spec-label">4. 状态变化</div>
+                                <div class="spec-content">
+                                    <ul>
+                                        <li>默认状态：材料列表。</li>
+                                        <li>触发后状态：大图预览模式。</li>
+                                    </ul>
+                                </div>
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="feature-demo">
+                        <div class="iphone-mockup">
+                            <div class="iphone-notch"></div>
+                            <div class="iphone-screen">
+                                <iframe class="iphone-iframe" src="../prototype/prototype_v1.0.html?sandbox=true&role=owner#materials"></iframe>
+                            </div>
+                        <div class="refresh-btn" onclick="const iframe = this.previousElementSibling.querySelector('iframe'); if(iframe.contentWindow){iframe.contentWindow.location.reload();}else{const src=iframe.src;iframe.src='';iframe.src=src;}" title="刷新原型">
+                                <i class="ri-refresh-line"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="feature-block" id="section-4-3-5">
+                    <div class="feature-desc">
+                        <h3>4.3.5 数字化档案室 <span class="tag p2">P2</span></h3>
+                        <ul class="spec-list">
+                            <li class="spec-item">
+                                <div class="spec-label">功能说明</div>
+                                <div class="spec-content">集中存储合同协议、全套设计图纸、隐蔽工程照片，支持随时查看。</div>
+                            </li>
+                            <li class="spec-item">
+                                <div class="spec-label">1. 触发条件</div>
+                                <div class="spec-content">从个人中心进入“项目资料”。</div>
+                            </li>
+                            <li class="spec-item">
+                                <div class="spec-label">2. 展示规则</div>
+                                <div class="spec-content">
+                                    <ul>
+                                        <li>以文件夹图标分类展示：图纸、合同、验收单等。</li>
+                                    </ul>
+                                </div>
+                            </li>
+                            <li class="spec-item">
+                                <div class="spec-label">3. 交互逻辑</div>
+                                <div class="spec-content">
+                <div class="mermaid-container" style="padding: 16px; margin: 0;">
+                    <div class="mermaid">
+                        flowchart LR
+                            A["点击文件夹"] --> B["进入对应文件列表"]
+                            B --> C["点击PDF或图片文件"]
+                            C --> D{"文件类型"}
+                            D -- 支持预览 --> E["在线预览"]
+                            D -- 不支持预览 --> F["提示下载"]
+                    </div>
+                </div>
+            </div>
+                            </li>
+                            <li class="spec-item">
+                                <div class="spec-label">4. 状态变化</div>
+                                <div class="spec-content">
+                                    <ul>
+                                        <li>默认状态：文件夹列表。</li>
+                                        <li>触发后状态：文件阅读器模式。</li>
+                                    </ul>
+                                </div>
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="feature-demo">
+                        <div class="iphone-mockup">
+                            <div class="iphone-notch"></div>
+                            <div class="iphone-screen">
+                                <iframe class="iphone-iframe" src="../prototype/prototype_v1.0.html?sandbox=true&role=owner#info"></iframe>
+                            </div>
+                            <div class="refresh-btn" onclick="const iframe = this.previousElementSibling.querySelector('iframe'); if(iframe.contentWindow){iframe.contentWindow.location.reload();}else{const src=iframe.src;iframe.src='';iframe.src=src;}" title="刷新原型">
+                                <i class="ri-refresh-line"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="feature-block" id="section-4-3-6">
+                    <div class="feature-desc">
+                        <h3>4.3.6 个人信息定制 <span class="tag p2">P2</span></h3>
+                        <ul class="spec-list">
+                            <li class="spec-item">
+                                <div class="spec-label">功能说明</div>
+                                <div class="spec-content">支持业主修改昵称、头像，增强系统归属感。展示项目基础信息、服务团队及家庭共享邀请码。</div>
+                            </li>
+                            <li class="spec-item">
+                                <div class="spec-label">1. 触发条件</div>
+                                <div class="spec-content">点击底部导航“我的”。</div>
+                            </li>
+                            <li class="spec-item">
+                                <div class="spec-label">2. 展示规则</div>
+                                <div class="spec-content">
+                                    <ul>
+                                        <li>顶部为个人资料卡，支持点击进入编辑。</li>
+                                        <li>中间展示专属服务团队（工长、设计师）的名片。</li>
+                                        <li>下方提供项目资料的快捷入口。</li>
+                                        <li>底部展示高亮的家庭共享邀请码。</li>
+                                        <li>编辑表单提供本地校验与失败重试提示。</li>
+                                    </ul>
+                                </div>
+                            </li>
+                            <li class="spec-item">
+                                <div class="spec-label">3. 交互逻辑</div>
+                                <div class="spec-content">
+                <div class="mermaid-container" style="padding: 16px; margin: 0; min-height: 210px;">
+                    <div class="mermaid">
+                        flowchart LR
+                            A["点击右上角编辑图标"] --> B["弹出修改资料表单"]
+                            B --> C{"本地校验是否通过"}
+                            C -- 通过 --> D["提交保存"]
+                            C -- 未通过 --> E["标红字段并提示原因"]
+                            D --> F{"保存成功?"}
+                            F -- 是 --> G["资料更新并返回个人中心"]
+                            F -- 否 --> H["提示失败, 可稍后重试"]
+                            A --> I["点击项目资料"] --> J["跳转数字化档案室"]
+                    </div>
+                </div>
+            </div>
+                            </li>
+                            <li class="spec-item">
+                                <div class="spec-label">4. 状态变化</div>
+                                <div class="spec-content">
+                                    <ul>
+                                        <li>默认状态：个人中心面板。</li>
+                                        <li>触发后状态：系统弹窗/进入子页面。</li>
+                                    </ul>
+                                </div>
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="feature-demo">
+                        <div class="iphone-mockup">
+                            <div class="iphone-notch"></div>
+                            <div class="iphone-screen">
+                                <iframe class="iphone-iframe" src="../prototype/prototype_v1.0.html?sandbox=true&role=owner#info"></iframe>
+                            </div>
+                            <div class="refresh-btn" onclick="const iframe = this.previousElementSibling.querySelector('iframe'); if(iframe.contentWindow){iframe.contentWindow.location.reload();}else{const src=iframe.src;iframe.src='';iframe.src=src;}" title="刷新原型">
+                                <i class="ri-refresh-line"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 5. 流程图 -->
+            <div id="section-flowchart" class="doc-section">
+                <h1>五、流程图</h1>
+                
+                <h2>5.1 业务流程图：施工日报与反馈闭环</h2>
+                <div class="mermaid-container">
+                    <div class="mermaid" id="mermaid-flow-1">
+                        sequenceDiagram
+                        actor Staff as 项目经理 (员工端)
+                        actor Owner as 业主 (业主端)
+                        
+                        Staff->>Staff: 1. 创建工地并生成邀请码
+                        Staff->>Owner: 2. 线下/微信发送邀请码
+                        Owner->>Owner: 3. 输入邀请码进入专属空间
+                        
+                        loop 每日施工闭环
+                            Staff->>Staff: 4. 拍摄现场照片，填写结构化日报
+                            Staff->>Owner: 5. 发布日报 (系统推送提醒)
+                            Owner->>Owner: 6. 查阅日报、查看进度
+                            alt 有疑问或不满意
+                                Owner->>Staff: 7. 提交反馈/疑问
+                                Staff->>Owner: 8. 针对反馈进行回复或整改说明
+                            end
+                        end
+                        
+                        Staff->>Owner: 9. 节点验收完成，更新进度表
+                    </div>
+                </div>
+
+                <h2 style="margin-top: 40px;">5.2 业务流程图：主材管控与确认</h2>
+                <div class="mermaid-container">
+                    <div class="mermaid" id="mermaid-flow-2">
+                        sequenceDiagram
+                        actor Staff as 项目经理
+                        participant System as 筑家云记系统
+                        actor Owner as 业主
+                        
+                        Staff->>System: 1. 录入主材清单 (品牌、型号、数量)
+                        System-->>Owner: 2. 同步展示透明材料清单
+                        
+                        loop 进度更新
+                            Staff->>System: 3. 更新物流状态 (发货/预计到达)
+                            System-->>Owner: 4. 状态同步更新
+                        end
+                        
+                        Staff->>System: 5. 材料到场，拍摄实物照片上传
+                        System-->>Owner: 6. 推送“材料已到场，请确认”通知
+                        
+                        alt 业主线上确认
+                            Owner->>System: 7a. 查看照片，点击确认无误
+                            System->>Staff: 8a. 状态变更为“已确认，可施工”
+                        else 业主有疑问
+                            Owner->>System: 7b. 发起疑问/要求退换
+                            System->>Staff: 8b. 状态变更为“异常”，需线下沟通
+                        end
+                    </div>
+                </div>
+
+                <h2 style="margin-top: 40px;">5.3 系统时序图：施工日报发布与多媒体上传</h2>
+                <div class="mermaid-container">
+                    <div class="mermaid" id="mermaid-flow-3">
+                        sequenceDiagram
+                        participant Client as 小程序/H5前端
+                        participant OSS as 对象存储服务 (OSS)
+                        participant Server as 后端业务服务
+                        participant DB as 数据库
+                        
+                        Client->>Server: 1. 请求上传凭证 (STS Token)
+                        Server-->>Client: 2. 返回临时安全凭证
+                        
+                        par 图片并发上传
+                            Client->>OSS: 3. 直传现场施工照片 1
+                            Client->>OSS: 3. 直传现场施工照片 N
+                        end
+                        
+                        OSS-->>Client: 4. 返回图片 URL 列表
+                        
+                        Client->>Server: 5. 提交日报表单 (包含文本、节点ID、图片URLs)
+                        Server->>DB: 6. 开启事务，写入日志表
+                        DB-->>Server: 7. 写入成功
+                        Server-->>Client: 8. 返回发布成功状态
+                        Client->>Client: 9. 刷新动态列表 (Moments)
+                    </div>
+                </div>
+            </div>
+
+            <!-- 6. 异常与边界 -->
+            <div id="section-exception" class="doc-section">
+                <h1>六、异常与边界处理</h1>
+                <table>
+                    <tr>
+                        <th>异常场景</th>
+                        <th>触发条件</th>
+                        <th>处理方案（前端）</th>
+                        <th>处理方案（后端兜底）</th>
+                    </tr>
+                    <tr>
+                        <td><strong>弱网/断网上传</strong></td>
+                        <td>项目经理在工地（信号差）上传多张现场照片</td>
+                        <td>支持断点续传；上传失败时保留本地草稿，在缩略图上显示红色感叹号，支持点击重试。</td>
+                        <td>接收到不完整的请求时自动丢弃，避免产生坏数据。</td>
+                    </tr>
+                    <tr>
+                        <td><strong>邀请码异常</strong></td>
+                        <td>业主输入了错误、过期或已被其他人绑定的邀请码</td>
+                        <td>清空输入框并标红，Toast 提示具体原因（如：“邀请码已过期，请联系工长重新获取”）。</td>
+                        <td>校验通过前，拒绝返回任何工地隐私数据。</td>
+                    </tr>
+                    <tr>
+                        <td><strong>无数据状态 </strong></td>
+                        <td>刚新建的工地，或者没有添加任何材料的列表</td>
+                        <td>显示插画缺省图 + 友好的引导文案（如：“暂无施工日志，快去催工长更新吧”）。</td>
+                        <td>返回空数组 <code>[]</code>，不报错。</td>
+                    </tr>
+                    <tr>
+                        <td><strong>并发修改冲突</strong></td>
+                        <td>两个员工同时尝试修改同一个“材料状态”</td>
+                        <td>提交时若发现状态已被修改，弹窗提示：“该数据已被其他同事更新，请刷新后重试”。</td>
+                        <td>利用乐观锁（Version号）或时间戳校验，拒绝过期的更新请求。</td>
+                    </tr>
+                    <tr>
+                        <td><strong>权限被剥夺</strong></td>
+                        <td>项目经理离职被踢出企业，但他还在小程序里操作</td>
+                        <td>捕获到 401/403 状态码时，强制跳转回登录页/身份选择页，并提示“您的权限已变更”。</td>
+                        <td>校验 Token 失效，拒绝所有接口访问。</td>
+                    </tr>
+                </table>
+            </div>
+
+            <!-- 7. 数据埋点 -->
+            <div id="section-analytics" class="doc-section">
+                <h1>七、数据埋点</h1>
+                <p><strong>通用参数（所有事件默认携带）：</strong> <code>user_id</code> (用户ID), <code>project_id</code> (工地ID), <code>role</code> (员工/业主), <code>timestamp</code> (发生时间)</p>
+                <table>
+                    <tr>
+                        <th>事件ID (Event Name)</th>
+                        <th>事件描述</th>
+                        <th>触发时机</th>
+                        <th>关键业务参数 (Properties)</th>
+                    </tr>
+                    <tr>
+                        <td><code>page_view_moments</code></td>
+                        <td>浏览工地动态页</td>
+                        <td>进入“Moments”页面加载完成时</td>
+                        <td><code>is_first_visit</code> (是否首次访问)</td>
+                    </tr>
+                    <tr>
+                        <td><code>click_write_report</code></td>
+                        <td>点击写日报按钮</td>
+                        <td>项目经理点击大厅或页面的“写日报”按钮</td>
+                        <td><code>stage_id</code> (当前所处阶段)</td>
+                    </tr>
+                    <tr>
+                        <td><code>submit_report_success</code></td>
+                        <td>日报发布成功</td>
+                        <td>日报数据成功保存并返回成功状态时</td>
+                        <td><code>image_count</code> (上传图片数), <code>text_length</code> (文字字数)</td>
+                    </tr>
+                    <tr>
+                        <td><code>click_owner_feedback</code></td>
+                        <td>业主点击反馈按钮</td>
+                        <td>业主在某条日志下方点击“回复/反馈”时</td>
+                        <td><code>log_id</code> (被反馈的日志ID)</td>
+                    </tr>
+                    <tr>
+                        <td><code>submit_material_status</code></td>
+                        <td>更新材料状态</td>
+                        <td>项目经理将材料状态变更为“已到场”等状态时</td>
+                        <td><code>material_id</code>, <code>new_status</code></td>
+                    </tr>
+                </table>
+            </div>
+
+            <!-- 8. 上线计划 -->
+            <div id="section-launch" class="doc-section">
+                <h1>八、上线计划与灰度策略</h1>
+                
+                <h2>8.1 上线节奏</h2>
+                <table>
+                    <tr>
+                        <th>阶段</th>
+                        <th>时间</th>
+                        <th>范围</th>
+                        <th>关注指标</th>
+                    </tr>
+                    <tr>
+                        <td><strong>内测期</strong></td>
+                        <td>T+0</td>
+                        <td>内部员工 + 3个样板房项目</td>
+                        <td>功能可用性、崩溃率</td>
+                    </tr>
+                    <tr>
+                        <td><strong>灰度期</strong></td>
+                        <td>T+7</td>
+                        <td>新开工的 20% 项目</td>
+                        <td>业主活跃度、日报覆盖率</td>
+                    </tr>
+                    <tr>
+                        <td><strong>全量发布</strong></td>
+                        <td>T+14</td>
+                        <td>所有在建项目</td>
+                        <td>用户满意度 NPS</td>
+                    </tr>
+                </table>
+
+                <h2>8.2 回滚方案</h2>
+                <p>若上线后出现严重阻断性 Bug（如无法登录、数据严重丢失），立即回滚至上一稳定版本 v0.9，并发布停服维护公告。</p>
+            </div>
+
+            <!-- 9. 未来演进规划 -->
+            <div id="section-roadmap" class="doc-section">
+                <h1>九、未来演进规划 </h1>
+                
+                <div class="feature-card" style="margin-bottom: 20px;">
+                    <h3>Phase 2.0：商业化与交易闭环 (预算与产品库)</h3>
+                    <ul>
+                        <li><strong>在线报价与预算系统</strong>：支持导入 Excel 报价单，业主可在线查看每一项的预算、已花费、超支预警。</li>
+                        <li><strong>主材与软装产品库</strong>：打通供应链，业主可在小程序内直接浏览公司合作的建材品牌、型号并一键确认选品。</li>
+                        <li><strong>线上增减项确认</strong>：施工过程中的项目增减，直接线上发起电子签单，避免微信聊天记录扯皮。</li>
+                    </ul>
+                </div>
+
+                <div class="feature-card" style="margin-bottom: 20px;">
+                    <h3>Phase 3.0：品牌营销与获客 (引流与企业文化)</h3>
+                    <ul>
+                        <li><strong>品牌微官网与企业文化</strong>：展示装修公司的发展历程、荣誉资质、金牌工长团队，建立信任背书。</li>
+                        <li><strong>优秀装修案例展 (VR/全景)</strong>：沉淀本系统的真实工地数据，经业主授权后，一键转化为公司的“实景案例”，用于朋友圈转发获客。</li>
+                        <li><strong>老带新分销裂变</strong>：为现有满意业主生成专属海报，推荐亲友签单可获软装券等奖励。</li>
+                    </ul>
+                </div>
+
+                <div class="feature-card" style="margin-bottom: 20px;">
+                    <h3>Phase 4.0：AI 赋能与自动化 (智能管控)</h3>
+                    <ul>
+                        <li><strong>AI 智能排期</strong>：根据历史工地数据和工人档期，自动生成最优施工甘特图，并在延期时自动推演后续影响。</li>
+                        <li><strong>AI 施工图纸核对与质量检测</strong>：项目经理上传现场照片后，AI 自动对比标准工艺图纸，指出可能的违规项（如：横槽过长、防水涂刷不到位）。</li>
+                    </ul>
+                </div>
+            
+            
+            
+            
+            
+            <!-- 10. 附件 -->
+            <div id="section-appendix" class="doc-section">
+                <h1>十、附件：业务数据字典与工艺标准库</h1>
+                
+                <h2 id="section-10-1">10.1 业务数据字典（工序节点与主材库）</h2>
+                <p>系统后台预置的基础数据配置表，用于规范项目经理的操作流程及业主端的信息展示：</p>
+                
+                <div style="display: flex; flex-direction: column; gap: 20px; margin-bottom: 20px;">
+                    <div style="background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px;">
+                        <h3 style="margin-top: 0; color: #0f172a; font-size: 16px; border-bottom: 2px solid #e2e8f0; padding-bottom: 10px;">表1：施工大阶段与工序节点表</h3>
+                        <table style="margin-top: 15px; width: 100%;">
+                            <tr>
+                                <th>施工大阶段</th>
+                                <th>包含的具体工序 / 节点名称</th>
+                            </tr>
+                            <tr><td><strong>1. 杂工阶段</strong></td><td>开工进场、墙地固施工、砸墙及垃圾清运</td></tr>
+                            <tr><td><strong>2. 水电阶段</strong></td><td>水电施工、水电路验收</td></tr>
+                            <tr><td><strong>3. 地暖阶段</strong></td><td>地暖铺设施工</td></tr>
+                            <tr><td><strong>4. 瓦工阶段</strong></td><td>防水施工、瓦工铺贴、瓦工验收</td></tr>
+                            <tr><td><strong>5. 木作阶段</strong></td><td>木工作业、木工验收</td></tr>
+                            <tr><td><strong>6. 油工阶段</strong></td><td>乳胶漆施工、乳胶漆验收</td></tr>
+                            <tr><td><strong>7. 主材及安装阶段</strong></td><td>到货验收、橱柜安装、木地板验收、房门安装、衣柜安装、卫浴验收等</td></tr>
+                        </table>
+                    </div>
+                    
+                    <div style="background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px;">
+                        <h3 style="margin-top: 0; color: #0f172a; font-size: 16px; border-bottom: 2px solid #e2e8f0; padding-bottom: 10px;">表2：主材分类与对接周期表</h3>
+                        <table style="margin-top: 15px; width: 100%;">
+                            <tr>
+                                <th>主材大类</th>
+                                <th>包含品类</th>
+                                <th>建议对接阶段</th>
+                            </tr>
+                            <tr>
+                                <td>门窗类</td>
+                                <td>入户防盗门、木门、厨房推拉门、卫生间合金门、封阳台</td>
+                                <td>开工测量，瓦工/油工后安装</td>
+                            </tr>
+                            <tr>
+                                <td>全屋定制类</td>
+                                <td>橱柜、衣柜、榻榻米、鞋柜、餐边柜</td>
+                                <td>瓦工后初尺，油工后复尺，竣工前安装</td>
+                            </tr>
+                            <tr>
+                                <td>卫浴五金类</td>
+                                <td>马桶、花洒、浴室柜、地漏、角阀</td>
+                                <td>水电定位，瓦工后进场安装</td>
+                            </tr>
+                            <tr>
+                                <td>地面材料类</td>
+                                <td>大地砖、木地板、过门石、踢脚线</td>
+                                <td>瓦工阶段进场</td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+
+                <h2 id="section-10-2" style="margin-top: 30px;">10.2 工艺做法与验收标准库</h2>
+                <p>注：APP已原生内置“常规汇报框架”（如自动生成汇报标题、问候语及结尾），项目经理不再需要手打模板，仅需在对应节点勾选以下具体的工艺规范及验收卡项即可：</p>
+
+                <style>
+                    details.appendix-details {
+                        background: #fff;
+                        border: 1px solid #e2e8f0;
+                        border-radius: 8px;
+                        margin-bottom: 12px;
+                        overflow: hidden;
+                    }
+                    details.appendix-details summary {
+                        padding: 16px 20px;
+                        font-size: 16px;
+                        font-weight: 600;
+                        color: #1e293b;
+                        background: #f8fafc;
+                        cursor: pointer;
+                        list-style: none;
+                        display: flex;
+                        justify-content: space-between;
+                        align-items: center;
+                    }
+                    details.appendix-details summary::-webkit-details-marker {
+                        display: none;
+                    }
+                    details.appendix-details summary::after {
+                        content: "+";
+                        font-size: 20px;
+                        color: #64748b;
+                        transition: transform 0.2s;
+                    }
+                    details.appendix-details[open] summary::after {
+                        content: "-";
+                        transform: rotate(180deg);
+                    }
+                    .details-content {
+                        padding: 20px;
+                        border-top: 1px solid #e2e8f0;
+                    }
+                    .details-content ul li {
+                        margin-bottom: 12px;
+                        line-height: 1.6;
+                        color: #334155;
+                    }
+                    .details-content ul li strong {
+                        color: #0f172a;
+                        background: #f1f5f9;
+                        padding: 4px 8px;
+                        border-radius: 4px;
+                        margin-right: 8px;
+                        font-size: 14px;
+                    }
+                </style>
+
+                <details class="appendix-details">
+                    <summary>一、杂工阶段 (开工进场 / 墙地固 / 砸墙)</summary>
+                    <div class="details-content">
+                        <h4 style="margin: 0 0 16px 0; color: #0284c7; font-size: 15px; border-left: 3px solid #0ea5e9; padding-left: 8px;">【开工】</h4>
+                        <ul style="list-style-type: none; padding-left: 0; margin-bottom: 28px;">
+                            <li><strong>设施排查</strong>：防盗门正反面完好无缺，拉手和锁运行正常。</li>
+                            <li><strong>可视对讲及挂件  个</strong></li>
+                            <li><strong>开工大吉保护膜</strong>：对入户防盗门进行保护，防止防盗门被刮花、刮伤，若是木门用无纺布经行保护，防止后期掉漆。</li>
+                            <li><strong>空鼓</strong>：客厅顶面、墙面，卧室顶面、墙面有空鼓现象，已做标记，需要提前告知物业公司进行处理、报备。</li>
+                            <li><strong>规范要求</strong>：卧室，客厅，餐厅原始墙面有基础施工洞口，已经发现多处裂纹，我已经标记好了，后期力工进场会按照我们施工标准进行开槽处理。</li>
+                            <li><strong>设施排查</strong>：原有卧室窗户完好无损，拉手合页正常。</li>
+                            <li><strong>设施排查</strong>：阳台防护栏牢固，没有发现不正常松动。</li>
+                            <li><strong>设施排查</strong>：煤气表1个，完好，未开通煤气。</li>
+                            <li><strong>设施排查</strong>：购房配置开关0个，通电测试均完好无损。</li>
+                            <li><strong>设施排查</strong>：购房配置插座0个，通电测试均完好无损。</li>
+                            <li><strong>设施排查</strong>：购房配置灯泡0个，通电测试均完好无损。</li>
+                            <li><strong>设施排查</strong>：购房配置配电箱1个，购房配置弱电箱1个，通电测试均完好无损。</li>
+                            <li><strong>设施排查</strong>：等电位箱0个，完好无损。</li>
+                            <li><strong>设施排查</strong>：空调孔0个，正常。</li>
+                            <li><strong>设施排查</strong>：主次卫排水管经测试水流通畅，无堵塞现象。</li>
+                            <li><strong>设施排查</strong>：厨房烟道经检查通风正常。</li>
+                            <li><strong>规范要求</strong>：主次卫生间经检查没有发现楼下楼上有漏水痕迹,阳台顶面及地面经检查无漏水痕迹。</li>
+                            <li><strong>临时蹲便器</strong>：工地工人临时专用。</li>
+                            <li><strong>燃气表保护套</strong>：在施工中对燃气表以及燃气管进行保护。</li>
+                            <li><strong>下水管封</strong>：施工中有效防止沙子水泥杂物掉入下水管道。</li>
+                            <li><strong>厨房卫生间门洞大小</strong></li>
+                        </ul>
+                        <h4 style="margin: 0 0 16px 0; color: #0284c7; font-size: 15px; border-left: 3px solid #0ea5e9; padding-left: 8px;">【墙地固】</h4>
+                        <ul style="list-style-type: none; padding-left: 0; margin-bottom: 28px;">
+                            <li><strong>铲大白</strong>：1.原始工程腻子环保系数较差，2.便于墙面找平，原始墙面可能高低不平，铲除腻子便于石膏找平，提高施工标准。3.防止墙面附着力低，从而造成刮腻子和基层墙体结合不牢，容易空鼓或腻子脱落。</li>
+                            <li><strong>黄色墙固</strong>：墙面加固处理剂是采用聚合物乳液和其他有机聚合物添加助剂精心配制而成，该产品为浅黄色液体，具有优异的渗透性，能充分浸润墙面基层，使基层坚固，增强光滑基面的附着力，粘接强度高，可营造出一个安全放心的墙面基层，可极大程度上避免墙面涂料层出现质量问题。</li>
+                            <li><strong>绿色地固</strong>：强力型地固是一种专门作用于水泥地面上的涂料，适用于家庭装修或工程装修初期水泥地面的封闭处理，防止跑沙现象。地固耐水防潮，也可以避免木地板受潮气侵蚀而产生的变形，同时避免日后从地板缝隙中“扑灰”。该产品可有多种颜色，主要以绿色，蓝色，红色为主，涂刷在地面上具有颜色鲜艳，色彩分布均匀，遮盖力强等特点，干燥后不掉粉，不掉色，可随意清扫。</li>
+                        </ul>
+                        <h4 style="margin: 0 0 16px 0; color: #0284c7; font-size: 15px; border-left: 3px solid #0ea5e9; padding-left: 8px;">【砸墙】</h4>
+                        <ul style="list-style-type: none; padding-left: 0; margin-bottom: 28px;">
+                            <li><strong>打墙</strong>：设计定位，确认位置</li>
+                            <li><strong>打整墙</strong>：由下之上开始打，打之前需注意做好安全防护，以免上墙突然掉下伤人。</li>
+                            <li><strong>打半边墙</strong>：确认位置，弹线，用切割机开槽至墙的一半，再打墙，可以确保打完之后剖面的平整。</li>
+                            <li><strong>打墙遇到电线水管时的注意</strong>：应小心处理，妥善解决，对原有材料进行适当保护。</li>
+                            <li><strong>规范要求</strong>：原有购房配置打墙时留下的开关插座已经保留好。</li>
+                            <li><strong>现场清理</strong>：按标准进行垃圾装袋。</li>
+                        </ul>
+                    </div>
+                </details>
+
+                <details class="appendix-details">
+                    <summary>二、水电阶段 (水电施工 / 验收)</summary>
+                    <div class="details-content">
+                        <h4 style="margin: 0 0 16px 0; color: #0284c7; font-size: 15px; border-left: 3px solid #0ea5e9; padding-left: 8px;">【水电施工】</h4>
+                        <ul style="list-style-type: none; padding-left: 0; margin-bottom: 28px;">
+                            <li><strong>下水管检修口</strong>：经检查主下水管检修口无松动漏水痕迹。</li>
+                            <li><strong>水暖管件</strong>：目前我公司做水路主要采用伟星PP-R绿色家园生态管，采用优质进口原料和进口设备生产，配件采用大弧弯工艺。内壁光滑，水阻小更顺畅，耐高温，耐腐蚀，绿色卫生，环保健康。连接便捷可靠，运行性能稳定，为您提供更安全的用水条件。</li>
+                            <li><strong>众邦电缆电线</strong>：国标铜芯耐火电线，其优点它的导体采用高纯度无氧铜，铜的含量高达95%以上，电阻低不易发热；偏心率极低，薄厚均匀，有效防止电流击穿，打火等现象发生，绝缘层采用进口阻燃PC，高强度绝缘层，防水、阻燃效果极佳。一般照明采用2.5平方电线，插座采用4平方电线，筒灯采用1.5平方电线。</li>
+                            <li><strong>伟星管道</strong>：伟星PVC线管是一种以聚氯乙烯树脂为主要原料，加入其他添加剂经挤出成型的电工套管，主要用于2000V以下的工业与建筑工程中的电线电缆保护；具有良好的阻燃、绝缘性能，安装便捷，使用寿命长等特点。</li>
+                            <li><strong>电部分→→</strong></li>
+                            <li><strong>规范要求</strong>：弹线开槽（管槽切割应横平竖直，深度符合布管后1cm-1.5cm）</li>
+                            <li><strong>规范要求</strong>：底盒敷设整齐平正，高低、间隔距离应一致，误差不超出0.5cm，经过检查现场底盒位置与图纸相符（与水电定位相符）</li>
+                            <li><strong>开关插座常规高度（底边离地净高，定位时应按实际情况调整）</strong>：普通插座： 30cm 。开关： 130cm。分体空调插座： 230m。 立式空调插座： 30cm。房间电视机插座： 70cm。油烟机插座： 220cm（欧式油烟机可置顶上）。床头灯插座： 60cm。厨房备用插座： 110cm</li>
+                            <li><strong>配线</strong>：空调柜机及厨、卫大功率电器插座导线铜芯截面积为4mm，电热水器导线铜芯截面积为6mm，其它插座导线铜芯截面积为2.5mm，照明支线为2.5mm；管内电线总截面积未超过管内截面积的70%。</li>
+                            <li><strong>规范要求</strong>：墙、顶面布管横平竖直，管卡固定，沟槽后期用水泥砂浆或粉刷石膏补平。</li>
+                            <li><strong>规范要求</strong>：管与管使用直接连接牢靠，拐弯处无缩径、无破损。</li>
+                            <li><strong>规范要求</strong>：插座接线并头缠绕圈数5-7圈，并包裹绝缘防水电胶布</li>
+                            <li><strong>规范要求</strong>：电路布管强、弱电线管交叉处使用锡箔纸包裹弱电管做防干扰处理。</li>
+                            <li><strong>成品保护</strong>：开关、插座暗盒安装，线盒水平安装、表面整齐且不突出墙面，固定牢靠，临时品诺筑家专用保护盖安装好。</li>
+                            <li><strong>规范要求</strong>：天然气管暗埋，保证后期美观度。</li>
+                            <li><strong>规范要求</strong>：所有布线（除灯头线外）需套管，局部布线可套绝缘黄腊管，无电线裸露入墙体。</li>
+                            <li><strong>水部分→→</strong></li>
+                            <li><strong>规范要求</strong>：冷热水管，冷热水管并行间距≥15cm，出水口左热右冷，出水口应做到高低，深浅一致，突出原墙面1.5CM左右。</li>
+                            <li><strong>规范要求</strong>：水管安装不得靠近电源，水管与电线管并行间距大于15cm，交叉时PVC管应做过桥弯过渡；开关插座与燃气管口间距不小于30cm。</li>
+                            <li><strong>出水口高度，淋浴龙头</strong>：110cm，浴缸龙头：65cm，洗脸（菜）盆出水口：60cm，洗衣机水龙头：110cm或洗衣机侧60cm，普通龙头： 60cm经过检查现场底盒位置与图纸相符（与水电定位相符，尺寸仅供参考）</li>
+                            <li><strong>设施排查</strong>：PPR给水管改造完毕必须进行打压测试，试验符合验收规范要求，保压试验时间不低于30分钟，压力为0.8Mpa，观察30分钟后压力表是否有跌落，如果跌落不超过0.05Mpa即为合格。</li>
+                            <li><strong>规范要求</strong>：PPR管路安装水口(左热右冷)；淋浴花洒中心间距15ｃｍ，距离地面1100mm，热水器中心间距15ｃｍ，距离棚面700mm、坐便给水口距离地面200mm，洗面盆给水口距离地面450mm,洗衣机给水口距离地面1100mm,（特殊情况根据施工现场实际情况）</li>
+                            <li><strong>排水部分→→</strong></li>
+                            <li><strong>排水管径</strong>：排污直径110mm，主排水直径75 mm，地漏、洗手（菜）盆排水直径50 mm，做通水试验，确定无渗漏，验收完毕下水口封管帽。</li>
+                            <li><strong>排水铺设</strong>：排水管铺设时洗手盆、地漏已设置存水弯，使用斜三通与45度弯头，走水顺畅，无渗漏，倒溢现象。</li>
+                            <li><strong>成品保护</strong>：排水管做排水通畅试验，完工后排水专用保护盖盖好。</li>
+                            <li><strong>安装部分→→</strong></li>
+                            <li><strong>规范要求</strong>：开关面板安装完毕，经检查，无高低不平，松动，并且都已检查确保每组线都通电，无漏电情况。</li>
+                            <li><strong>设施排查</strong>：灯饰安装无松动，通电正常，灯槽反光一致。</li>
+                            <li><strong>规范要求</strong>：水龙头、水箱安装牢固，未出现漏水。</li>
+                            <li><strong>电源底盒保护盖</strong>：保证用电安全，有效防止沙石进入底盒内部，保护底盒内部清洁。</li>
+                            <li><strong>开关插座数量如下</strong></li>
+                            <li><strong>成品保护</strong>：临时插座、照明外，插座、灯头线头需压临时保护线帽。</li>
+                        </ul>
+                        <h4 style="margin: 0 0 16px 0; color: #0284c7; font-size: 15px; border-left: 3px solid #0ea5e9; padding-left: 8px;">【水电路验收】</h4>
+                        <ul style="list-style-type: none; padding-left: 0; margin-bottom: 28px;">
+                            <li><strong>电路部分→→</strong></li>
+                            <li><strong>所用电线材料图片是否已发群里</strong></li>
+                            <li><strong>规范要求</strong>：局改全屋插座4㎡，开关2.5㎡，灯线1.5㎡,  网线超6类,光纤线同时接入</li>
+                            <li><strong>规范要求</strong>：强弱电分开单独走线，红管强电，蓝管弱电</li>
+                            <li><strong>规范要求</strong>：强弱电交接处用锡纸包裹防止干扰</li>
+                            <li><strong>成品保护</strong>：裸漏线头绝缘胶带包裹处理或者有堵帽保护</li>
+                            <li><strong>线管和线盒链接处用锁扣连接</strong></li>
+                            <li><strong>插座每根线管穿线数量不超3根</strong></li>
+                            <li><strong>规范要求</strong>：布线按规定穿PVC绝缘管，横平竖直，采用冷弯工艺，禁止使用90°弯头,双管采用线卡间距</li>
+                            <li><strong>规范要求</strong>：卫生间地面不得走电线管，烟道处禁止开槽</li>
+                            <li><strong>规范要求</strong>：无法开槽黄蜡管穿线，不得穿裸线</li>
+                            <li><strong>规范要求</strong>：电路位置按设计及业主需求施工，无遗漏位置</li>
+                            <li><strong>水电图是否群内有记录</strong></li>
+                            <li><strong>分线地方必须有分线盒</strong></li>
+                            <li><strong>水路部分→→</strong></li>
+                            <li><strong>水管交叉处是否有过桥弯处理</strong></li>
+                            <li><strong>规范要求</strong>：冷热水管不共槽，水路，电路不同槽</li>
+                            <li><strong>规范要求</strong>：冷热水安装应左热右冷，上热下冷</li>
+                            <li><strong>规范要求</strong>：淋浴头采用双联内丝弯控制15公分间距</li>
+                            <li><strong>成品保护</strong>：下水管进行通水试验，试验完用管盖保护</li>
+                            <li><strong>管道，配件带防伪标识</strong></li>
+                            <li><strong>设施排查</strong>：打压测试是否合格，官网是否可查询记录</li>
+                            <li><strong>规范要求</strong>：水路按设计及业主要求施工，无遗漏位置</li>
+                        </ul>
+                    </div>
+                </details>
+
+                <details class="appendix-details">
+                    <summary>三、地暖阶段 (地暖铺设)</summary>
+                    <div class="details-content">
+                        <h4 style="margin: 0 0 16px 0; color: #0284c7; font-size: 15px; border-left: 3px solid #0ea5e9; padding-left: 8px;">【地暖施工】</h4>
+                        <ul style="list-style-type: none; padding-left: 0; margin-bottom: 28px;">
+                            <li><strong>规范要求</strong>：加热管的安装间距为200-220mm，管材应用地热采暖专用管，符合双方签定合同时确定的规格；若管间距加密应在施工合同中说明并加收管材成本费。</li>
+                            <li><strong>规范要求</strong>：在分集水器附近连接处的加热管已加装柔性套管，并高于装饰层0--200 mm。当管材排列较密且间距小于100 mm时应加设柔性套管。</li>
+                            <li><strong>规范要求</strong>：已预留墙角、地面热胀伸缩缝，使用伸缩棉条，以防因加热导致热胀后致使地面起拱，损坏其他设施。</li>
+                            <li><strong>规范要求</strong>：加热管与分集水器的连接处无渗漏。</li>
+                            <li><strong>规范要求</strong>：填充层内加热管（PE—X）严禁有接头，（PE—RT除外）。</li>
+                            <li><strong>规范要求</strong>：水压试验压力为工作压力的1.5倍，且不应小于0.6Mpa。</li>
+                            <li><strong>规范要求</strong>：在试验压力稳定时间应不少于1小时，其压力降幅不应大于0.05 Mpa。</li>
+                            <li><strong>地暖回填材料比例水泥、大沙、米石比例为1</strong>：2:3。</li>
+                            <li><strong>规范要求</strong>：回填完毕要用塑料薄膜覆盖完毕，防止温差过大造成裂缝。</li>
+                            <li><strong>规范要求</strong>：温控阀已安装完毕，起到调节作用，方便使用</li>
+                            <li><strong>分水器保护罩</strong>：工地地暖分水器专用保护罩。</li>
+                            <li><strong>规范要求</strong>：安装完毕，分水器每路标有所管区域，方便后期使用。</li>
+                        </ul>
+                    </div>
+                </details>
+
+                <details class="appendix-details">
+                    <summary>四、瓦工阶段 (防水 / 铺贴 / 验收)</summary>
+                    <div class="details-content">
+                        <h4 style="margin: 0 0 16px 0; color: #0284c7; font-size: 15px; border-left: 3px solid #0ea5e9; padding-left: 8px;">【防水】</h4>
+                        <ul style="list-style-type: none; padding-left: 0; margin-bottom: 28px;">
+                            <li><strong>防水材料</strong>：丙纶布卷材防水，全名聚乙烯丙纶卷材，上下表面粗糙，无纺布纤维呈无规则交叉结构，形成立体网孔。可以在环境温度-40℃～60℃范围内长期稳定使用。适合多种材料粘合，尤其与水泥材料在凝固过程中直接粘合，只要无明水便可施工，其综合性能良好，抗拉强度高。抗渗能力强，低温柔性好，膨胀系数小，易粘接，摩擦系数小，可直接设于砂土中使用，性能稳定可靠。是一种无毒、无污染的绿色环保产品。</li>
+                            <li><strong>防水材料</strong>：东方雨虹JS柔性防水，蓝色有利于检查防水施工的标准和规范。东方雨虹防水具有强附着力、抗渗透、耐寒抗盐类侵蚀，柔韧抗变形力强的优点，环保系数符合欧盟标准的绿色产品。</li>
+                            <li><strong>规范要求</strong>：防水施工，现场原始地面应打扫干净整洁，进行第一遍丙纶布防水施工，要求缝隙对接均匀，施工范围包括地面以及墙面上翻30公分</li>
+                            <li><strong>规范要求</strong>：防水施工，门口雨虹蓝防水做折边儿处理，防止墙面后期受潮返碱。</li>
+                            <li><strong>规范要求</strong>：防水施工，卫生间门口防水台儿是为了防止后期出现返水现象，这样更加有保证</li>
+                            <li><strong>规范要求</strong>：防水施工，丙纶布防水施工结束后，进行第二遍雨虹柔性防水涂刷，要求墙地面涂刷均匀，施工范围包括地面以及墙面上翻30公分，淋浴区域为1.5米X1.8米</li>
+                            <li><strong>规范要求</strong>：防水施工，待防水完全晾干后，进行闭水试验，要求不能低于48个小时</li>
+                            <li><strong>规范要求</strong>：防水施工，前往楼下验收防水施工，检查下水管周围以及整个顶面有无渗水现象</li>
+                        </ul>
+                        <h4 style="margin: 0 0 16px 0; color: #0284c7; font-size: 15px; border-left: 3px solid #0ea5e9; padding-left: 8px;">【瓦工】</h4>
+                        <ul style="list-style-type: none; padding-left: 0; margin-bottom: 28px;">
+                            <li><strong>规范要求</strong>：瓷砖验收，大地砖的型号以及数量验收，经现场查看跟您前期选购材料型号一致无误，现向您发送图片，（图片会存在轻微色差，请以实物为准），请您注意查收</li>
+                            <li><strong>规范要求</strong>：瓷砖验收，厨房墙砖与地砖的型号以及数量验收，经现场查看跟您前期选购材料型号一致无误，现向您发送图片，（图片会存在轻微色差，请以实物为准），请您注意查收</li>
+                            <li><strong>规范要求</strong>：瓷砖验收，卫生间墙砖与地砖的型号以及数量验收，经现场查看跟您前期选购材料型号一致无误，现向您发送图片，（图片会存在轻微色差，请以实物为准），请您注意查收</li>
+                            <li><strong>规范要求</strong>：瓷砖验收，阳台墙砖与地砖的型号以及数量验收，经现场查看跟您前期选购材料型号一致无误，现向您发送图片，（图片会存在轻微色差，请以实物为准），请您注意查收</li>
+                            <li><strong>规范要求</strong>：瓷砖验收，过门石的型号以及数量验收，经现场查看跟您前期选购材料型号一致无误，现向您发送图片，（图片会存在轻微色差，请以实物为准），请您注意查收</li>
+                            <li><strong>水泥搅拌桶</strong>：工地专用水泥搅拌桶。</li>
+                            <li><strong>泡砖水箱</strong>：工地专用泡砖水箱。</li>
+                            <li><strong>水泥</strong>：是家庭装修必不可少的建筑材料，主要用于瓷砖粘贴，地面抹灰找平，墙体砌筑等。家装最常用的水泥为32.5号硅酸盐水泥。瓷砖铺贴水泥砂浆一般应按水泥：砂=1：2.5（体积比）的比例来搅拌。</li>
+                            <li><strong>沙子</strong>：配合水泥制成水泥砂浆，墙体砌筑、粘贴瓷砖和地面找平用。分为大沙、细沙，大沙粒径0.35---0.5mm，细沙粒径0.25---0.35mm，建议使用大沙为好。</li>
+                            <li><strong>水泥青砖</strong>：砌柱子用的一种长方体砌块，用水泥灰等轻质材料烧制而成，尺寸为220*98×37mm。砌柱子砌筑的主要标准是不能有上下"通缝"以保证柱子的坚固，因此砖块的砌筑应遵循内外搭接上下错缝的原则。</li>
+                            <li><strong>轻质砖</strong>：砌墙用的一种长方体砌块，用粉煤灰等轻质材料烧制而成，尺寸为600*240×100mm。砖墙砌筑的主要标准是不能有上下"通缝"以保证砖墙的坚固，因此砖块的砌筑应遵循内外搭接上下错缝的原则。</li>
+                            <li><strong>瓦工专用壁护宝</strong>：壁护宝粘接剂是外观浅黄色的胶液，代替了传统施工中使用的801胶水，瓦工施工涂刷在水泥墙面，具有优异的渗透性，能充分浸润墙面基层，提高光滑界面附着力，粘连强度高，保证水泥拉毛牢固可靠，提高水泥素灰和原始水泥墙面的粘接强度。</li>
+                            <li><strong>砂浆宝</strong>：砂浆宝是袋装粉状物，瓦工施工时按照比例掺入水泥中，增加素灰的粘接性，防止水泥中的水分快速挥发，增加了水泥素灰和原始水泥墙面的粘接强度。</li>
+                            <li><strong>瓷砖矫正器</strong>：调节瓷砖平整度，更好保证瓷砖铺贴效果</li>
+                            <li><strong>瓷砖背胶</strong>：涂刷于瓷砖背面，增加瓷砖与灰层的粘结力，多用于全瓷砖墙面铺贴。</li>
+                            <li><strong>砌体工程</strong>：新旧墙体连接成已放6mm钢筋,确保墙体牢固，门头为新预制梁，沉重可靠。</li>
+                            <li><strong>抹灰</strong>：新旧墙体连接处按照公司规定均已挂铁网，降低连接处的开裂几率。</li>
+                            <li><strong>地面找平</strong>：地面的平整度达到要求，要求是2米靠尺检查误差不超过3毫米，地面不返沙起灰。施工后2天之内我们会做地面养护，以获得更好的施工质量。养护期间不能进屋踩压，避免损坏地面，3-5天后地面可以行走。</li>
+                            <li><strong>门槛石处理</strong>：门槛石已做水泥素灰处理，避免水汽通过松散水泥沙进入房间大厅</li>
+                            <li><strong>管道静音处理</strong>：采用阻尼片、隔音棉包裹，有效地降低水噪。</li>
+                            <li><strong>烟道下水管处理</strong>：采用青砖加砌，内置加筋处理，外部挂网抹灰。</li>
+                            <li><strong>规范要求</strong>：墙面砖铺贴，现场进行墙砖铺贴，粘结材料为水泥沙，墙砖背面与原墙清洁后再刷壁护宝，增加粘结能力，避免空鼓掉落的风险，将小砖留在门后。</li>
+                            <li><strong>规范要求</strong>：墙面瓷砖铺贴遇水管水龙头时，师傅采用钻孔器进行钻孔，避免安装花洒水龙头出现缝隙，影响美观。</li>
+                            <li><strong>规范要求</strong>：铺贴完毕，墙砖铺贴平整，缝隙均匀，预留1-2mm缝隙，后期美缝效果更佳，并检查空鼓现象个别单砖小于5%，符合施工标准。</li>
+                            <li><strong>规范要求</strong>：地砖铺贴，放样合理，铺贴水平，缝隙均匀，采用品诺筑家专用瓷砖矫正器，预留2mm缝隙，后期美缝效果更佳。</li>
+                            <li><strong>成品保护</strong>：铺贴完成地砖铺贴平整，无错缝，缝隙均匀，清理干净验收后会用专用地面保护膜保护，以防地砖磨损。</li>
+                            <li><strong>卫生间阳台地漏铺贴</strong>：四边切割法，以地漏为中心，在地漏边上6-10厘米的地方打出一个方框，从这个地方做一个对角线，贴砖时做一个坡度。</li>
+                            <li><strong>地砖放坡</strong>：阳台卫生间地面铺贴地砖，坡度为1.5%~2.5%，作倒水测试，地面无积水。</li>
+                        </ul>
+                        <h4 style="margin: 0 0 16px 0; color: #0284c7; font-size: 15px; border-left: 3px solid #0ea5e9; padding-left: 8px;">【瓦工验收】</h4>
+                        <ul style="list-style-type: none; padding-left: 0; margin-bottom: 28px;">
+                            <li><strong>水电标识贴</strong>：有效指示水电走向，为完工成品安装做好标记，防止损坏隐蔽管线。</li>
+                            <li><strong>瓷砖护角</strong>：用于墙砖粘贴完毕阳角对角处的防护。</li>
+                            <li><strong>规范要求</strong>：墙地砖空鼓单砖≤15%，总面积≤5%</li>
+                            <li><strong>规范要求</strong>：墙地砖表面平整符合要求（允许偏差2mm）</li>
+                            <li><strong>地漏安装牢固，下水通畅</strong></li>
+                            <li><strong>规范要求</strong>：阴阳角是否垂直（允许偏差2mm）</li>
+                            <li><strong>卫生间墙地砖通缝</strong></li>
+                            <li><strong>铺贴完后的墙砖和地砖对空鼓方面的质量要求</strong>：①无整块空鼓；②单块砖边或角空鼓数量不超过铺贴砖总数量的5%。</li>
+                            <li><strong>所有砖面颜色一致，无破损。</strong></li>
+                            <li><strong>对卫生间铺贴完地砖后的坡度控制要求</strong>：须满足2%的排水要求。</li>
+                            <li><strong>地面保护膜</strong>：对瓷砖表面起到保护作用，防止防刮花、刮伤（主材安装后、竣工前清理地面保护膜及保洁）。</li>
+                            <li><strong>铺贴完后的墙砖和地砖对空鼓方面的质量要求</strong>：①无整块空鼓；②单块砖边或角空鼓数量不超过铺贴砖总数量的5%。</li>
+                            <li><strong>对卫生间铺贴完地砖后的坡度控制要求</strong>：须满足2%的排水要求。</li>
+                        </ul>
+                    </div>
+                </details>
+
+                <details class="appendix-details">
+                    <summary>五、木作阶段 (木工作业 / 验收)</summary>
+                    <div class="details-content">
+                        <h4 style="margin: 0 0 16px 0; color: #0284c7; font-size: 15px; border-left: 3px solid #0ea5e9; padding-left: 8px;">【木工】</h4>
+                        <ul style="list-style-type: none; padding-left: 0; margin-bottom: 28px;">
+                            <li><strong>规范要求</strong>：木工进场，设计师再次讲解木工注意，进行现场交底。</li>
+                            <li><strong>大芯板</strong>：也称细木工板，是利用天然旋切单板与实木拼板经涂胶、热压而成的板材，选择细木工板一定要注意选择符合E0级以上环保标准的。夹芯板主要用在一些特殊造型，楼梯踏步等基础垫层。</li>
+                            <li><strong>奥松板</strong>：奥松板，一种进口的中密度板，是夹芯板、刨花板的替代升级产品，特性是更加环保。奥松板用辐射松原木制成，主要使用原生林树木，能够更直接地确保所用纤维线的连续性奥松板一般被广泛用于装饰，家具，建筑，包装等行业，其硬度大，密度高，适合护墙板、软包、硬包、镜片等室内装饰基层。防火防潮性能优于传统大芯板、不易变形且非常环保。</li>
+                            <li><strong>石膏板</strong>：采用世界500强的北新建材龙牌普通纸面石膏板，采用高性能护面纸与建筑石膏及特殊添加剂等芯材牢固粘结成型，正面呈灰白色，严格按照 GB/T 9775-1999 生产。强度高、韧性好:采用高性能护面纸，确保隔墙吊顶的强度。握钉力强:发泡率适中，单位面积重量适中，提高施工速度，降低劳动强度。护面纸粘结牢固:工艺、配方先进，不脱纸。</li>
+                            <li><strong>双饰面板</strong>：也称免漆板，常用于家具制作的板材。板子表面的那层装饰纸，在学术上称三聚氢氨纸，这种纸有一定的抗打击能力，可以印刷各种图案，家具表面的木材图案就是印刷在这种专业纸上，而实际上内部的板材是刨花板。刨花板具有握钉力好，结实耐用的优点，选择双饰面板要选择符合环保E0级标准的。</li>
+                            <li><strong>木方</strong>：装修中常用的一种材料,有多种型号,用于撑起外面的装饰板，起支架作用。</li>
+                            <li><strong>轻钢龙骨</strong>：根据其型号、规格及用途的不同，有T形、C形、U形、卡式龙骨、L型边骨及专用配套附件等，轻钢龙骨广泛用于室内装修吊顶、隔墙、造型等。它坚固、耐用、抗腐蚀性强，在价格方面也广受建设单位和施工单位的欢迎，减少工程在施工过程中对木龙骨变形引起的质量的担忧，以及因变形而导致的频繁维修，大大降低工程施工成本和使用时因维修造成的各种烦恼。</li>
+                            <li><strong>自攻螺丝</strong>：自攻螺丝是一种带有钻头的螺丝，自攻螺丝主要用于一些较薄板件的连接与固定，如夹心板，奥松板，指接板等相互的连接，轻钢龙骨边骨与副骨的连接等。优点硬度高，其穿透能力强，不易弯曲并且自身有很强的耐腐蚀能力。</li>
+                            <li><strong>膨胀螺丝</strong>：一般说的是金属膨胀螺丝，膨胀螺丝的固定是利用楔形斜度来促使膨胀产生摩擦握裹力，达到固定效果。螺钉一头是螺纹，一头有锥度，外面包一铁皮（有的是钢管），铁皮圆筒（钢管）一半有若干切口，把它们一起塞进墙上打好的洞里，然后锁螺母，螺母把螺钉往外拉，将锥度拉入铁皮圆筒，铁皮圆筒被涨开，于是紧紧固定在墙上。</li>
+                            <li><strong>封石膏板</strong>：窗帘盒已封石膏板，天花转角处的石膏板裁∟型固定，中间丁字接口裁T型固定，石膏板面层周边螺丝间距≤20cm，石膏板缝隙留0.5cm~1cm的V型间隔。</li>
+                            <li><strong>规范要求</strong>：v形槽，石膏板接缝采用v形工艺，后期充分填补石膏更牢固，降低开裂几率。</li>
+                            <li><strong>防锈自攻丝，避免后期生锈</strong></li>
+                            <li><strong>规范要求</strong>：主龙骨间距≤700，主副龙骨采用新型卡式龙骨，有一定的起拱量。</li>
+                            <li><strong>规范要求</strong>：中央空调出风口采用独家细木工侧板加固，保证后期风口百叶安装牢固性。</li>
+                            <li><strong>规范要求</strong>：吊顶拐角处采用品诺筑家独家护角神器，连接两根龙骨，使其成为一个整体，更加牢固，增加其稳定性，能够有效地防止后期出现拐角开裂现象。</li>
+                            <li><strong>工艺要求是</strong>：石膏板饰面安装质量标准：①整体水平度＜3mm，②接缝高低≤2mm，表面无污染，无缺破坏。</li>
+                            <li><strong>规范要求</strong>：边龙骨固定点间距为≤300mm，吊杆固定间距为≤600mm。</li>
+                            <li><strong>规范要求</strong>：副骨排列间距≤350mm，专用自攻钉固定。</li>
+                            <li><strong>规范要求</strong>：采用8mm吊杆，膨胀拉爆固定。吊杆距墙边距离≤300mm，吊杆距离主龙骨末端≤100mm。</li>
+                            <li><strong>石膏板饰面安装质量标准</strong>：①整体水平度＜3mm，②接缝高低≤2mm，表面无污染，无缺破坏。</li>
+                        </ul>
+                        <h4 style="margin: 0 0 16px 0; color: #0284c7; font-size: 15px; border-left: 3px solid #0ea5e9; padding-left: 8px;">【木工验收】</h4>
+                        <ul style="list-style-type: none; padding-left: 0; margin-bottom: 28px;">
+                            <li><strong>顶内为轻钢龙骨架</strong></li>
+                            <li><strong>规范要求</strong>：石膏板与石膏板之间留缝大于5mm,V字形</li>
+                            <li><strong>吊顶转角龙骨使用斜拉工艺</strong></li>
+                            <li><strong>石膏板底板托侧板拼接工艺</strong></li>
+                            <li><strong>规范要求</strong>：转角处采用45°对角工艺，相比较转角处采用L型拼板，更有效降低应力释放</li>
+                            <li><strong>规范要求</strong>：阴阳角是否垂直（允许偏差2mm）</li>
+                            <li><strong>卫生间墙地砖通缝</strong></li>
+                            <li><strong>所有砖面颜色一致，无破损。</strong></li>
+                            <li><strong>地面保护膜</strong>：对瓷砖表面起到保护作用，防止防刮花、刮伤（主材安装后、竣工前清理地面保护膜及保洁）。</li>
+                        </ul>
+                    </div>
+                </details>
+
+                <details class="appendix-details">
+                    <summary>六、油工阶段 (乳胶漆 / 验收)</summary>
+                    <div class="details-content">
+                        <h4 style="margin: 0 0 16px 0; color: #0284c7; font-size: 15px; border-left: 3px solid #0ea5e9; padding-left: 8px;">【乳胶漆项】</h4>
+                        <ul style="list-style-type: none; padding-left: 0; margin-bottom: 28px;">
+                            <li><strong>石膏线</strong>：石膏线是房屋装修材料，主要作为室内原始棚顶阴角装饰，吊棚造型，墙面背景等装饰用途。</li>
+                            <li><strong>石膏腻子</strong>：采用品诺筑家专供的龙牌石膏和腻子，粉刷石膏易于成型，强度高，不易收缩；嵌缝石膏易填充，适用局部修补，表面收光；腻子粉用于基层精找平，白度高易打磨。</li>
+                            <li><strong>乳胶漆</strong>：又称为合成树脂乳液涂料，是有机涂料的一种，是以合成树脂乳液为基料加入颜料、填料及各种助剂配制而成的一类水性涂料。依照特点及适用范围，分为内墙乳胶漆、外墙乳胶漆、防水乳胶漆等。目前我们所使用世界十大品牌之一的立邦金装五合一乳胶漆，经全新增白配方设计的一款优质室内经济型装饰涂料，具有优异的透气性，干遮盖力，干白度，附着力和防霉性等多重功效，对墙面起到保护和美化的作用，是室内装饰墙面和天花板的理想选择。</li>
+                            <li><strong>规范要求</strong>：网格带，使用降能低线槽开裂风险。</li>
+                            <li><strong>规范要求</strong>：线槽进行网格带处理，降低线槽开裂风险，所有线槽都已挂网。</li>
+                            <li><strong>规范要求</strong>：石膏板钉眼进行防锈处理，对石膏板自攻螺丝处点补防锈漆，经检查，未存在漏点。</li>
+                            <li><strong>规范要求</strong>：对阴阳角放置阴阳角线，确保阴阳角顺直。</li>
+                            <li><strong>绷带纸</strong>：降低石膏板开裂几率。</li>
+                            <li><strong>规范要求</strong>：对石膏板接缝处进行防开裂处理，填补石膏粉，粘贴绷带纸，降低石膏板开裂几率。</li>
+                            <li><strong>规范要求</strong>：对墙面打磨处理，砂纸目数为不低于240目，打磨完成后，项目经理进行平整度检查。</li>
+                            <li><strong>防裂神器</strong>：拐角处增加防裂神器，降低石膏板拐角开裂几率。</li>
+                            <li><strong>经检查，墙面无明显打磨痕迹。</strong></li>
+                            <li><strong>成品保护</strong>：墙漆前处理，对于墙面粉尘要清扫干净，所有需要分色面已用美纹纸进行保护，如开关底盒，门套木作等。</li>
+                            <li><strong>规范要求</strong>：两遍面漆，采用晨阳水漆，已涂刷两遍，未发现透底和漏刷，流坠现象。</li>
+                            <li><strong>规范要求</strong>：墙面冲筋是参考红外线水平仪找出墙面最高点，以此为基准等距在墙面冲出垂直石膏条筋，干透后批刮粉刷石膏，再用刮杆把墙面刮平。</li>
+                            <li><strong>规范要求</strong>：世界十大品牌之一的上海加拿大原装进口喜加乳胶漆，产品采用ECO无味环保技术，不人为主动添加甲醛、苯、重金属、APEO等有害物质，净味。分型号不同，基本上底漆一遍，面漆一遍，完工涂刷均匀饱满、无明显色差、无刷痕。</li>
+                        </ul>
+                        <h4 style="margin: 0 0 16px 0; color: #0284c7; font-size: 15px; border-left: 3px solid #0ea5e9; padding-left: 8px;">【乳胶漆验收】</h4>
+                        <ul style="list-style-type: none; padding-left: 0; margin-bottom: 28px;">
+                            <li><strong>顶面</strong>：目测无波浪、坑包，乳胶漆涂刷均匀无色差。</li>
+                            <li><strong>石膏线、板线造型</strong>：板线上下口宽窄一致无弯曲，乳胶漆涂刷均匀无露底、无流坠。</li>
+                            <li><strong>规范要求</strong>：隐藏处是否有腻子挂白（衣柜背后、分水器、窗台石下方）</li>
+                            <li><strong>墙面</strong>：踢脚线、柜子处、门套线处.做垂直处理，误差3mm之内，其他地方顺平工艺，误差5mm之内</li>
+                            <li><strong>腻子刮白到底2cm以下</strong></li>
+                            <li><strong>墙面壁纸、硅藻泥打磨</strong>：大白基层不露底（目测）。</li>
+                            <li><strong>乳胶漆</strong>：有色涂料涂刷均匀饱满、无明显色差、无刷痕。</li>
+                        </ul>
+                    </div>
+                </details>
+
+                <details class="appendix-details">
+                    <summary>七、主材与安装标准</summary>
+                    <div class="details-content">
+                        <h4 style="margin: 0 0 16px 0; color: #0284c7; font-size: 15px; border-left: 3px solid #0ea5e9; padding-left: 8px;">【橱柜安装】</h4>
+                        <ul style="list-style-type: none; padding-left: 0; margin-bottom: 28px;">
+                            <li><strong>A</strong>：安装过程验收</li>
+                            <li><strong>规范要求</strong>：地暖分水器位置套割标准，插座底盒位置准确。</li>
+                            <li><strong>规范要求</strong>：柜体开孔时使用开孔器，严禁随意开孔，严禁柜内空间封闭不严密。</li>
+                            <li><strong>规范要求</strong>：石英石台面在工厂加工订制完成，现场对接的“L”型台面，台面底部已处理加固，避免接口断裂。</li>
+                            <li><strong>规范要求</strong>：台下盆安装已在厂里直接加工固定好。</li>
+                            <li><strong>规范要求</strong>：吊柜安装前，已准确定位，用瓷砖专用钻头打孔，用膨胀栓与螺钉紧固柜体</li>
+                            <li><strong>规范要求</strong>：台面与挡水条用中性玻璃胶连接，挡水条与墙体使用中性玻璃胶均匀打胶连接。</li>
+                            <li><strong>规范要求</strong>：橱柜拉手相同，无色差，高度统一一致。</li>
+                            <li><strong>规范要求</strong>：橱柜安装完成，卫生已打扫干净整洁。</li>
+                            <li><strong>B</strong>：安装结束验收</li>
+                            <li><strong>规范要求</strong>：橱柜安装外型尺寸，允许偏差3（mm）</li>
+                            <li><strong>规范要求</strong>：橱柜安装立面垂直度，允许偏差2（mm）</li>
+                            <li><strong>规范要求</strong>：橱柜安装台面平整度，允许偏差2（mm）</li>
+                        </ul>
+                        <h4 style="margin: 0 0 16px 0; color: #0284c7; font-size: 15px; border-left: 3px solid #0ea5e9; padding-left: 8px;">【木地板验收】</h4>
+                        <ul style="list-style-type: none; padding-left: 0; margin-bottom: 28px;">
+                            <li><strong>A</strong>：安装过程验收</li>
+                            <li><strong>规范要求</strong>：基层地面应平整、坚实、干燥，含水率南方地区不大于15%、北方地区不大于12%；严禁基层空鼓、起皮、脱落、开裂；平整度不大于2mm。</li>
+                            <li><strong>规范要求</strong>：木地板安装前已清扫干净地面灰尘。</li>
+                            <li><strong>木地板基层安装完毕。</strong></li>
+                            <li><strong>规范要求</strong>：木地板完成面比门槛石低3-5mm。</li>
+                            <li><strong>成品保护</strong>：木地板铺贴完成后及时使用品诺筑家专用地保进行成品保护。</li>
+                            <li><strong>B</strong>：安装结束验收</li>
+                            <li><strong>规范要求</strong>：板面缝隙宽度，允许偏差0.5（mm）</li>
+                            <li><strong>规范要求</strong>：表面平整度，允许偏差2（mm）</li>
+                            <li><strong>规范要求</strong>：板面拼缝平直，允许偏差3（mm）</li>
+                            <li><strong>规范要求</strong>：踢脚线与面层的接缝，允许偏差1（mm）</li>
+                        </ul>
+                        <h4 style="margin: 0 0 16px 0; color: #0284c7; font-size: 15px; border-left: 3px solid #0ea5e9; padding-left: 8px;">【房门安装】</h4>
+                        <ul style="list-style-type: none; padding-left: 0; margin-bottom: 28px;">
+                            <li><strong>A</strong>：安装过程验收</li>
+                            <li><strong>规范要求</strong>：户内门框安装，门框两边每隔600mm安装固定木楔，待门套位置预固定后取出。</li>
+                            <li><strong>规范要求</strong>：厨房门框安装时，门头吊轨安装吊门较重，需用膨胀螺丝固定。</li>
+                            <li><strong>规范要求</strong>：门框与墙体间缝隙使用发泡胶填充，多余的发泡胶必须在未干固前刮掉。</li>
+                            <li><strong>规范要求</strong>：依据户内门基座与门套框高度，准确切割门套线45°角，对接时应严密无缝或者拼接直角缝安装。</li>
+                            <li><strong>规范要求</strong>：门套线与墙体间隙小于5mm，套线与墙体缝隙用与门套线或墙体相近颜色的中性玻璃胶密封，打胶应均匀顺畅</li>
+                            <li><strong>合页位置</strong>：每扇门需用3片合页，上面合页上口距门头约为240mm，中间合页下口距门头约840mm，下面合页下口距门底约为280mm。</li>
+                            <li><strong>合页安装必须方正牢固。</strong></li>
+                            <li><strong>规范要求</strong>：门扇安装后，卧室门距地面5-8mm，平开厨房门、卫生间门距地面8-10mm，其余3边与门框间距均匀且不大于4mm。</li>
+                            <li><strong>规范要求</strong>：户内门吸统一安装在墙面上，门吸中心距门板边缘50mm,高度为所在房间地面完成面以上100mm。</li>
+                            <li><strong>B</strong>：安装结束验收</li>
+                            <li><strong>规范要求</strong>：门槽口对角线长度差，允许偏差2（mm）</li>
+                            <li><strong>规范要求</strong>：门框的正、侧面垂直度，允许偏差2（mm）</li>
+                            <li><strong>规范要求</strong>：门扇与上框间留缝，允许偏差2（mm）</li>
+                            <li><strong>规范要求</strong>：门套线接缝高低差，允许偏差2（mm）</li>
+                        </ul>
+                        <h4 style="margin: 0 0 16px 0; color: #0284c7; font-size: 15px; border-left: 3px solid #0ea5e9; padding-left: 8px;">【衣柜安装】</h4>
+                        <ul style="list-style-type: none; padding-left: 0; margin-bottom: 28px;">
+                            <li><strong>准备阶段</strong></li>
+                            <li><strong>材料到场</strong>：板材运送到现场时一般都有纸板包装。拆开包装后验收一下各块板材和五金件。</li>
+                            <li><strong>固定螺丝</strong>：板材上一般都按设计图在加工时预留好了钉眼，在现场的工人用专用工具把螺丝固定好。</li>
+                            <li><strong>安装阶段</strong></li>
+                            <li><strong>固定框架</strong>：按照板材上的凹槽安装好衣柜的侧板和背板，调整各块板之间的位置。</li>
+                            <li><strong>安装顶板</strong>：现场最好准备一个攀高用的凳子，顶板要举高了放置上去的，然后固定牢固。</li>
+                            <li><strong>安装搁板</strong>：把搁板放置到事先敲好螺丝的地方，然后固定。注意调整搁板与背板、侧板的固定位置。</li>
+                            <li><strong>固定门轨</strong>：在衣柜的顶边和底边都安装好门轨，门轨选合金的材料比较好，又轻又牢固。</li>
+                            <li><strong>安装衣杆</strong>：在预留的位置打好固定螺丝，安装好衣杆。注意两边要平衡。</li>
+                            <li><strong>收尾阶段</strong></li>
+                            <li><strong>安装门扇</strong>：两扇移门要贴和导轨的位置安装，先固定好门扇再把底边的导轨固定好，这样避免以后发生门扇脱落的现象。</li>
+                            <li><strong>调整改良</strong>：全部安装完之后，对衣柜做个“全面检查”，有偏差的话及时调整。</li>
+                        </ul>
+                        <h4 style="margin: 0 0 16px 0; color: #0284c7; font-size: 15px; border-left: 3px solid #0ea5e9; padding-left: 8px;">【卫浴验收】</h4>
+                        <ul style="list-style-type: none; padding-left: 0; margin-bottom: 28px;">
+                            <li><strong>洗漱盆安装注意</strong></li>
+                            <li><strong>规范要求</strong>：洗漱盆与排水管连接后应牢固密实，且便于拆卸，连接处不得敞口。洗漱盆与墙面接触部应用硅膏嵌缝。</li>
+                            <li><strong>马桶的安装注意</strong></li>
+                            <li><strong>规范要求</strong>：给水管安装角阀高度一般距地面至角阀中心为250mm，如安装连体坐便器应根据坐便器进水口离地高度而定，但不小于100mm，给水管角阀中心一般在污水管中心左侧100mm或根据坐便器实际尺寸定位。</li>
+                            <li><strong>规范要求</strong>：带水箱及连体马桶其水箱后背部离墙应不大于20mm。</li>
+                        </ul>
+                        <h4 style="margin: 0 0 16px 0; color: #0284c7; font-size: 15px; border-left: 3px solid #0ea5e9; padding-left: 8px;">【到货验收】</h4>
+                        <ul style="list-style-type: none; padding-left: 0; margin-bottom: 28px;">
+                            <li><strong>主材未开封，数量与合同一致。</strong></li>
+                            <li><strong>规范要求</strong>：开封后，经一一检查，无损坏。产品型号、色彩与合同上标注一致。</li>
+                            <li><strong>规范要求</strong>：五金、压条型号，色彩与合同上标注一致。</li>
+                            <li><strong>已经堆放到现场指定处。</strong></li>
+                        </ul>
+                    </div>
+                </details>
+
+                <h2 id="section-10-3" style="margin-top: 30px;">10.3 综合提醒与特殊业务通知模板</h2>
+                <p>用于施工群内与业主的日常沟通、安全防范提醒及特殊事件（如停工、请假、收款等）的快速播报：</p>
+
+
+                <details class="appendix-details">
+                    <summary>一、安全与规范防范提示</summary>
+                    <div class="details-content">
+
+                            <div style="background: #f8fafc; padding: 12px 16px; border-radius: 6px; border-left: 4px solid #cbd5e1; margin-bottom: 12px;">
+                                <h4 style="margin: 0 0 8px 0; color: #475569; font-size: 14px;">[水电施工安全提示]</h4>
+                                <p style="margin: 0; font-size: 13px; color: #334155; line-height: 1.6;"><span style="color:#eab308; font-weight:bold;">尊敬的业主您好</span>，目前工地正在进行水电施工，施工进行时由于电路线管接头是未完成作业状态且电芯处于暴露状态，开关插座高度大多数为1000MM以内，为了您的安全，在此期间工地上谢绝携带儿童参观。如需参观，请做好保护措施，杜绝安全隐患的发生。品诺筑家项目经理XX祝您生活愉快！</p>
+                            </div>
+
+                            <div style="background: #f8fafc; padding: 12px 16px; border-radius: 6px; border-left: 4px solid #cbd5e1; margin-bottom: 12px;">
+                                <h4 style="margin: 0 0 8px 0; color: #475569; font-size: 14px;">[泥工施工安全提示]</h4>
+                                <p style="margin: 0; font-size: 13px; color: #334155; line-height: 1.6;"><span style="color:#eab308; font-weight:bold;">尊敬的业主您好</span>，目前工地进入泥工施工期间，现场有大量瓷片，水泥，砂子等施工需要的物料，去往工地参观时，请注意脚下安全，小心地上瓷砖切割的碎片。施工时现场切割瓷砖会产生大量的白灰，请记得带上口罩，以免灰尘吸入体内引起身体不适，谢谢您的配合。品诺筑家项目经理XX祝您生活愉快！</p>
+                            </div>
+
+                            <div style="background: #f8fafc; padding: 12px 16px; border-radius: 6px; border-left: 4px solid #cbd5e1; margin-bottom: 12px;">
+                                <h4 style="margin: 0 0 8px 0; color: #475569; font-size: 14px;">[未封闭阳台安全提示]</h4>
+                                <p style="margin: 0; font-size: 13px; color: #334155; line-height: 1.6;"><span style="color:#eab308; font-weight:bold;">尊敬的业主您好</span>，由于目前阳台窗户是未封闭状态，参观工地时，为了安全起见，请不要靠窗户太近，请大家做好安全措施，谢谢大家配合。品诺筑家项目经理XX祝您生活愉快！</p>
+                            </div>
+
+                            <div style="background: #f8fafc; padding: 12px 16px; border-radius: 6px; border-left: 4px solid #cbd5e1; margin-bottom: 12px;">
+                                <h4 style="margin: 0 0 8px 0; color: #475569; font-size: 14px;">[自装施工提示]</h4>
+                                <p style="margin: 0; font-size: 13px; color: #334155; line-height: 1.6;"><span style="color:#eab308; font-weight:bold;">尊敬的业主您好</span>，目前工地已进入自装阶段，工地施工时请做好成品保护，禁止吸烟，因为现场有一些易燃物品，提醒工人下班断水断电，为了以防万一，请大家多多配合，抓好工地安全，杜绝隐患。品诺筑家项目经理XX祝您生活愉快！</p>
+                            </div>
+
+                            <div style="background: #f8fafc; padding: 12px 16px; border-radius: 6px; border-left: 4px solid #cbd5e1; margin-bottom: 12px;">
+                                <h4 style="margin: 0 0 8px 0; color: #475569; font-size: 14px;">[木工施工安全提示]</h4>
+                                <p style="margin: 0; font-size: 13px; color: #334155; line-height: 1.6;"><span style="color:#eab308; font-weight:bold;">尊敬的业主您好</span>，目前工地已进入木工施工阶段，参观工地时请注意脚下安全，因为现场有一些木工作业时遗留的细小钉子，一般木工都不会乱丢乱请您放心，为了以防万一，请大家多多配合，抓好工地安全，杜绝隐患。品诺筑家项目经理XX祝您生活愉快！</p>
+                            </div>
+
+                            <div style="background: #f8fafc; padding: 12px 16px; border-radius: 6px; border-left: 4px solid #cbd5e1; margin-bottom: 12px;">
+                                <h4 style="margin: 0 0 8px 0; color: #475569; font-size: 14px;">[禁止吸烟安全提示]</h4>
+                                <p style="margin: 0; font-size: 13px; color: #334155; line-height: 1.6;"><span style="color:#eab308; font-weight:bold;">尊敬的业主您好</span>，目前工地已进入基装施工阶段，参观工地时请禁止吸烟，因为现场有一些易燃物品，为了以防万一，请大家多多配合，抓好工地安全，杜绝隐患。品诺筑家项目经理XX祝您生活愉快！</p>
+                            </div>
+
+                            <div style="background: #f8fafc; padding: 12px 16px; border-radius: 6px; border-left: 4px solid #cbd5e1; margin-bottom: 12px;">
+                                <h4 style="margin: 0 0 8px 0; color: #475569; font-size: 14px;">[乳胶漆施工安全提示]</h4>
+                                <p style="margin: 0; font-size: 13px; color: #334155; line-height: 1.6;"><span style="color:#eab308; font-weight:bold;">尊敬的业主您好</span>，目前施工阶段为乳胶漆涂料部分，打磨时工地会有大量白色灰尘，为了您及家人的健康，工地谢绝老人、孕妇、儿童参观，参观者请带上口罩或做好其他安全防范，以免腻子粉尘吸入体内引起身体不适，谢谢配合。品诺筑家项目经理XX祝您生活愉快！</p>
+                            </div>
+
+                            <div style="background: #f8fafc; padding: 12px 16px; border-radius: 6px; border-left: 4px solid #cbd5e1; margin-bottom: 12px;">
+                                <h4 style="margin: 0 0 8px 0; color: #475569; font-size: 14px;">[通知]</h4>
+                                <p style="margin: 0; font-size: 13px; color: #334155; line-height: 1.6;"><span style="color:#eab308; font-weight:bold;">尊敬的业主您好</span>，感谢您们选择品诺筑家为您们服务！按照2019年品诺筑家春节停工要求，为了在春节期间新房的安全，我们必须做好关水、关电、关窗、关门四关工作，您们的新房装修因为春节暂时告一段落，期待来年继续全心全意为您们新家服务。下面是停工前进行的四关工作照片，请您们查收！</p>
+                            </div>
+
+                            <div style="background: #f8fafc; padding: 12px 16px; border-radius: 6px; border-left: 4px solid #cbd5e1; margin-bottom: 12px;">
+                                <h4 style="margin: 0 0 8px 0; color: #475569; font-size: 14px;">[通知]</h4>
+                                <p style="margin: 0; font-size: 13px; color: #334155; line-height: 1.6;">品诺筑家项目经理XX从现场为您发来的春节安全防护措施，请您们查收！品诺筑家提前祝您们春节愉快，万事如意！</p>
+                            </div>
+                    </div>
+                </details>
+
+                <details class="appendix-details">
+                    <summary>二、行政与调度通知 (停复工/请假/收款)</summary>
+                    <div class="details-content">
+
+                            <div style="background: #f8fafc; padding: 12px 16px; border-radius: 6px; border-left: 4px solid #cbd5e1; margin-bottom: 12px;">
+                                <h4 style="margin: 0 0 8px 0; color: #475569; font-size: 14px;">[请假条]</h4>
+                                <p style="margin: 0; font-size: 13px; color: #334155; line-height: 1.6;"><span style="color:#eab308; font-weight:bold;">尊敬的业主，您好！</span>明天我正常休假一天，工地施工情况，我已给现场师傅安排好了，公司也会有相关人员为您监督管理，请您放心，如有任何问题请直接与我电话联系。品诺筑家项目经理XX，祝您生活愉快，家庭幸福！</p>
+                            </div>
+
+                            <div style="background: #f8fafc; padding: 12px 16px; border-radius: 6px; border-left: 4px solid #cbd5e1; margin-bottom: 12px;">
+                                <h4 style="margin: 0 0 8px 0; color: #475569; font-size: 14px;">[停工通知]</h4>
+                                <p style="margin: 0; font-size: 13px; color: #334155; line-height: 1.6;"><span style="color:#eab308; font-weight:bold;">尊敬的业主，您好！</span>由于明天工人XX有事需要请假一天，故明天工地停工一天，还请您批准为谢，停工期间我们将不再进行工地进度播报与每日点到，请您谅解，品诺筑家项目经理XX祝您生活愉快，家庭幸福！</p>
+                            </div>
+
+                            <div style="background: #f8fafc; padding: 12px 16px; border-radius: 6px; border-left: 4px solid #cbd5e1; margin-bottom: 12px;">
+                                <h4 style="margin: 0 0 8px 0; color: #475569; font-size: 14px;">[停工通知]</h4>
+                                <p style="margin: 0; font-size: 13px; color: #334155; line-height: 1.6;"><span style="color:#eab308; font-weight:bold;">尊敬的业主，您好！</span>由于您选的材料未能及时到位，工地无法施工，故明天工地停工1-3天，停工期间我们将不再进行工地进度播报与每日点到，请您谅解，材料到达现场后将在此做提示说明或电话沟通，品诺筑家项目经理XX祝您生活愉快，家庭幸福！</p>
+                            </div>
+
+                            <div style="background: #f8fafc; padding: 12px 16px; border-radius: 6px; border-left: 4px solid #cbd5e1; margin-bottom: 12px;">
+                                <h4 style="margin: 0 0 8px 0; color: #475569; font-size: 14px;">[复工通知]</h4>
+                                <p style="margin: 0; font-size: 13px; color: #334155; line-height: 1.6;"><span style="color:#eab308; font-weight:bold;">尊敬的业主，您好！</span>有关设计修改事宜已与您确定，明天开始复工，复工后工地将恢复正常，品诺筑家项目经理XX祝您生活愉快，家庭幸福！</p>
+                            </div>
+
+                            <div style="background: #f8fafc; padding: 12px 16px; border-radius: 6px; border-left: 4px solid #cbd5e1; margin-bottom: 12px;">
+                                <h4 style="margin: 0 0 8px 0; color: #475569; font-size: 14px;">[复工通知]</h4>
+                                <p style="margin: 0; font-size: 13px; color: #334155; line-height: 1.6;"><span style="color:#eab308; font-weight:bold;">尊敬的业主，您好！</span>您选的主材已经送达现场，明天开始复工，复工后工地将恢复正常，品诺筑家项目经理XX祝您生活愉快，家庭幸福！</p>
+                            </div>
+
+                            <div style="background: #f8fafc; padding: 12px 16px; border-radius: 6px; border-left: 4px solid #cbd5e1; margin-bottom: 12px;">
+                                <h4 style="margin: 0 0 8px 0; color: #475569; font-size: 14px;">[收款通知]</h4>
+                                <p style="margin: 0; font-size: 13px; color: #334155; line-height: 1.6;">尊敬的业主，下午好！首先感谢您选择品诺筑家公司为您服务，对我公司的信任和支持，目前您新家施工进度已过半，工程验收均无质量问题，根据合同条约，木工材料进场，需支付工程第二期款，麻烦您抽空转下账或来我公司刷卡支付工程款，以免影响工期，谢谢您的配合。品诺筑家项目经理XX祝您生活愉快，家庭幸福！</p>
+                            </div>
+                    </div>
+                </details>
+
+                <details class="appendix-details">
+                    <summary>三、节假日与竣工类</summary>
+                    <div class="details-content">
+
+                            <div style="background: #f8fafc; padding: 12px 16px; border-radius: 6px; border-left: 4px solid #cbd5e1; margin-bottom: 12px;">
+                                <h4 style="margin: 0 0 8px 0; color: #475569; font-size: 14px;">[开工大吉]</h4>
+                                <p style="margin: 0; font-size: 13px; color: #334155; line-height: 1.6;">再次恭祝：XX先生XX女士开工大吉！
+<span style="color:#eab308; font-weight:bold;">尊敬的业主您好</span>！再次介绍下我是品诺筑家项目经理：XXX，我的联系方式为：XXXXXXXX，咱们家的基础装修（水电，泥工，木工，乳胶漆)的工期把控，工程质量的监督，工人的调度都将由我负责，以及主材（木门，橱柜，钛镁合金门，定制衣柜）的测量和辅料的进场时间安排，包括对主材的安装进度进行跟踪，以及对主材安装质量进行验收当然后期家电家具之类的我也可以给您做一个参考和推荐。施工过程中有任何的疑问都可以随时与我沟通，工地的施工进度我会每天以文字和图片的形式发到群内，希望我们合作愉快。祝：xX先生XX女士工作顺利，财源滚滚！</p>
+                            </div>
+
+                            <div style="background: #f8fafc; padding: 12px 16px; border-radius: 6px; border-left: 4px solid #cbd5e1; margin-bottom: 12px;">
+                                <h4 style="margin: 0 0 8px 0; color: #475569; font-size: 14px;">[竣工提示]</h4>
+                                <p style="margin: 0; font-size: 13px; color: #334155; line-height: 1.6;"><span style="color:#eab308; font-weight:bold;">尊敬的业主您好</span>，感谢您一路来对我们工作的支持，您的支持是我们前进的动力，您的满意一直是我们努力的目标，也感谢您在百忙之中对我们工作提出的建议、批评及对我们工作的指导，有高标准的要求，我们才会快速进步，再次感谢您。根据咱们双方合同的约定，您新居装修工程已全部完工，从明天开始，我们将不再播报工地报道，服务没有终点，服务永远只有起点，随着工程的结束，即将迎来售后服务的开端，本群也会解散，同样有关人员会添加您的微信将继续为您服务，在以后的日子里，您有什么售后问题，可以直接联系我们售后，售后电话33193，我们会第一时间为您解决，感谢您一路走来的配合！ 品诺筑家全体员工祝您阖家幸福，身体健康，万事顺利！</p>
+                            </div>
+
+                            <div style="background: #f8fafc; padding: 12px 16px; border-radius: 6px; border-left: 4px solid #cbd5e1; margin-bottom: 12px;">
+                                <h4 style="margin: 0 0 8px 0; color: #475569; font-size: 14px;">[品诺筑家·春节停工四关工作]</h4>
+                                <p style="margin: 0; font-size: 13px; color: #334155; line-height: 1.6;"></p>
+                            </div>
+                    </div>
+                </details>
+
+            </div>
+
+            <!-- 底部留白 -->
+            <div style="height: 100px; width: 100%;"></div>
+
+        </div>
+    </main>
+    
+        <!-- Right Tab (Prototype) -->
+        <div class="side-tab right-tab" id="right-tab" onclick="toggleGlobalPreview()">
+            原型
+        </div>
+
+        <!-- Preview Overlay (State C Drawer) -->
+        <div class="prototype-drawer" id="preview-panel">
+            <div class="prototype-drawer-content">
+                <div>
+                    <div class="drawer-mockup">
+                        <div class="iphone-notch"></div>
+                        <div class="iphone-screen">
+                            <iframe id="proto-frame" src="../prototype/prototype_v1.0.html#login"></iframe>
+                        </div>
+                        <div class="drawer-refresh-btn" onclick="const iframe = document.getElementById('proto-frame'); if(iframe.contentWindow){iframe.contentWindow.location.reload();}else{const src=iframe.src;iframe.src='';iframe.src=src;}" title="刷新原型">
+                            <i class="ri-refresh-line"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+</div>
+
+<script>
+    const container = document.getElementById('main-container');
+    const leftTab = document.getElementById('left-tab');
+    const rightTab = document.getElementById('right-tab');
+    
+    // Toggle Sidebar
+    function toggleSidebar() {
+        if (container.classList.contains('state-sidebar-open')) {
+            container.classList.remove('state-sidebar-open');
+        } else {
+            container.classList.add('state-sidebar-open');
+        }
+    }
+
+    // Toggle SubMenu
+    function toggleSubMenu(menuId) {
+        const menu = document.getElementById(menuId);
+        const icon = document.getElementById('icon-' + menuId);
+        if (menu.style.display === 'none') {
+            menu.style.display = 'block';
+            if (icon) icon.style.transform = 'rotate(0deg)';
+        } else {
+            menu.style.display = 'none';
+            if (icon) icon.style.transform = 'rotate(-90deg)';
+        }
+    }
+
+    // 导航高亮逻辑
+    const navItems = document.querySelectorAll('.nav-item');
+    navItems.forEach(item => {
+        item.addEventListener('click', function() {
+            navItems.forEach(n => n.classList.remove('active'));
+            this.classList.add('active');
+        });
+    });
+
+    // 控制原型侧边栏的显示/隐藏与跳转 (State C)
+    function toggleGlobalPreview(hash) {
+        if (container.classList.contains('state-prototype-open') && !hash) {
+            container.classList.remove('state-prototype-open');
+            container.classList.add('state-sidebar-open');
+        } else {
+            if (hash) {
+                const frame = document.getElementById('proto-frame');
+                const currentSrc = frame.src.split('#')[0];
+                if (frame.src !== currentSrc + '#' + hash) {
+                    frame.src = currentSrc + '#' + hash;
+                }
+            }
+            container.classList.add('state-prototype-open');
+            container.classList.remove('state-sidebar-open');
+        }
+    }
+    
+    // 保留沙盒切片，不注入截图画廊
+    document.querySelectorAll('.mermaid-container').forEach(function (container) {
+        const el = container.querySelector('.mermaid');
+        if (!el) return;
+        let scale = 1;
+        let baseWidth = 0;
+        let baseHeight = 0;
+        let tx = 0;
+        let ty = 0;
+        let isPanning = false;
+        let startX = 0;
+        let startY = 0;
+
+        function applyTransform() {
+            el.style.transform = 'translate(' + tx + 'px,' + ty + 'px) scale(' + scale + ')';
+        }
+
+        function fitToContainer() {
+            const svg = el.querySelector('svg');
+            if (!svg) return false;
+            // Reset for measurement
+            scale = 1; tx = 0; ty = 0; applyTransform();
+            const rect = svg.getBoundingClientRect();
+            baseWidth = rect.width || svg.scrollWidth;
+            baseHeight = rect.height || svg.scrollHeight;
+            const availW = Math.max(100, container.clientWidth - 48);
+            const targetH = 210; // 目标框高（约当前的一半）
+            if (baseWidth > 0 && baseHeight > 0) {
+                const scaleW = (availW / baseWidth) * 0.98;
+                const scaleH = (targetH / baseHeight) * 0.98;
+                scale = Math.min(2.2, Math.max(0.6, Math.min(scaleW, scaleH)));
+                applyTransform();
+                const scaledH = baseHeight * scale;
+                container.style.height = Math.max(scaledH + 24, 180) + 'px';
+            }
+            return true;
+        }
+
+        function zoomAt(delta, clientX, clientY) {
+            const svg = el.querySelector('svg');
+            if (!svg) return;
+            const rect = container.getBoundingClientRect();
+            const prevScale = scale;
+            const factor = (delta > 0 ? 0.9 : 1.1);
+            scale = Math.max(0.8, Math.min(10.0, scale * factor));
+            const k = scale / prevScale;
+            // Zoom towards pointer
+            const cx = clientX - rect.left - rect.width / 2;
+            const cy = clientY - rect.top - rect.height / 2;
+            tx = tx - cx * (k - 1);
+            ty = ty - cy * (k - 1);
+            applyTransform();
+            const natH = baseHeight || svg.getBoundingClientRect().height;
+            const scaledH = natH * scale;
+            container.style.height = Math.max(scaledH + 24, 180) + 'px';
+        }
+
+        // Wait for mermaid SVG render
+        let attempts = 0;
+        (function waitForSvg() {
+            attempts++;
+            if (fitToContainer()) return;
+            if (attempts < 20) setTimeout(waitForSvg, 100);
+        })();
+
+        // Resize
+        window.addEventListener('resize', function () {
+            fitToContainer();
+        });
+
+        // Wheel zoom (pointer-centered)
+        container.addEventListener('wheel', function (e) {
+            e.preventDefault();
+            zoomAt(e.deltaY, e.clientX, e.clientY);
+        }, { passive: false });
+
+        // Pan with mouse drag
+        container.addEventListener('mousedown', function (e) {
+            isPanning = true;
+            startX = e.clientX;
+            startY = e.clientY;
+            container.style.cursor = 'grabbing';
+        });
+        window.addEventListener('mousemove', function (e) {
+            if (!isPanning) return;
+            const dx = e.clientX - startX;
+            const dy = e.clientY - startY;
+            startX = e.clientX;
+            startY = e.clientY;
+            tx += dx;
+            ty += dy;
+            applyTransform();
+        });
+        window.addEventListener('mouseup', function () {
+            if (!isPanning) return;
+            isPanning = false;
+            container.style.cursor = 'grab';
+        });
+
+        // Double-click to reset fit
+        container.addEventListener('dblclick', function () {
+            fitToContainer();
+        });
+    });
+</script>
+
+</body>
+</html>

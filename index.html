@@ -42,9 +42,13 @@
             overflow-x: hidden;
             height: 100vh;
             overflow-y: scroll;
-            /* 改用 proximity 配合平滑滚动，或者保持 mandatory 但调整子元素的过渡 */
-            scroll-snap-type: y mandatory;
             scroll-behavior: smooth;
+        }
+        
+        @media (min-width: 768px) {
+            html, body {
+                scroll-snap-type: y mandatory;
+            }
         }
 
         .font-zh { font-family: 'Noto Sans SC', sans-serif; }
@@ -63,6 +67,24 @@
             text-transform: uppercase;
             font-weight: 500;
         }
+        
+        @media (max-width: 768px) {
+            .top-nav {
+                top: 0;
+                right: 0;
+                left: 0;
+                padding: 1rem 1.5rem;
+                gap: 1.5rem;
+                background: rgba(245, 245, 245, 0.9);
+                backdrop-filter: blur(10px);
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+            .top-nav a {
+                white-space: nowrap;
+            }
+        }
+
         .top-nav a {
             color: var(--text);
             text-decoration: none;
@@ -101,14 +123,22 @@
             flex-direction: column;
             justify-content: center;
             position: relative;
-            scroll-snap-align: start;
-            scroll-snap-stop: always; /* 强制停留在每一页，产生明确的顿感 */
-            padding-top: 2rem;
+            padding-top: 6rem; /* Make room for mobile nav */
+            padding-bottom: 3rem;
             
             /* 页面显现的渐变效果：结合 Intersection Observer 使用 */
             opacity: 0;
             transform: translateY(30px);
             transition: opacity 1.2s cubic-bezier(0.22, 1, 0.36, 1), transform 1.2s cubic-bezier(0.22, 1, 0.36, 1);
+        }
+        
+        @media (min-width: 768px) {
+            .section-full {
+                padding-top: 2rem;
+                padding-bottom: 0;
+                scroll-snap-align: start;
+                scroll-snap-stop: always; /* 强制停留在每一页，产生明确的顿感 */
+            }
         }
         
         /* 当页面进入视口时的状态 */
@@ -119,38 +149,68 @@
 
         /* Journey Section Specific Styles */
         .journey-container {
-            height: 100vh;
             display: flex;
             align-items: flex-start;
-            overflow: hidden; /* 防止溢出干扰snap */
+            flex-direction: column;
         }
         .sticky-sidebar {
-            height: 100vh;
             display: flex;
             flex-direction: column;
             justify-content: center;
+            padding-bottom: 2rem;
+            position: sticky;
+            top: 4rem;
+            z-index: 20;
+            background: var(--bg);
         }
         .scrollable-content {
-            height: 100vh;
-            overflow-y: auto;
-            padding-top: 30vh; /* 让第一项垂直居中一些 */
-            padding-bottom: 30vh;
             position: relative;
-            /* 隐藏滚动条但允许滚动 */
+            width: 100%;
+        }
+        
+        @media (min-width: 768px) {
+            .journey-container {
+                height: 100vh;
+                flex-direction: row;
+                overflow: hidden; /* 防止溢出干扰snap */
+            }
+            .sticky-sidebar {
+                height: 100vh;
+                position: relative;
+                top: 0;
+                padding-bottom: 0;
+                background: transparent;
+            }
+            .scrollable-content {
+                height: 100vh;
+                overflow-y: auto;
+                padding-top: 30vh; /* 让第一项垂直居中一些 */
+                padding-bottom: 30vh;
+            }
+        }
+
+        /* 隐藏滚动条但允许滚动 */
+        .scrollable-content {
             -ms-overflow-style: none;  
             scrollbar-width: none;  
         }
         .scrollable-content::-webkit-scrollbar { 
             display: none; 
         }
+        
         .timeline-line {
             position: absolute;
-            left: 3rem; /* 对应 pl-12 的距离 */
+            left: 1.5rem; /* For mobile: 对应 pl-6 */
             top: 0;
             bottom: 0;
             width: 1px;
             background-color: var(--line);
             z-index: 0;
+        }
+        @media (min-width: 768px) {
+            .timeline-line {
+                left: 3rem; /* For desktop: 对应 pl-12 */
+            }
         }
 
         /* 图片与项目卡片 (取消灰度，改为微小的亮度/阴影交互) */
@@ -168,13 +228,6 @@
         }
         .project-image:hover img {
             transform: scale(1.03);
-        }
-
-        .timeline-line {
-            position: absolute;
-            left: 0; top: 0; bottom: 0;
-            width: 1px;
-            background: var(--line);
         }
 
         /* Scroll Indicator */
@@ -329,18 +382,18 @@
             <!-- Right: Scrollable Timeline -->
             <div class="md:col-span-8 relative scrollable-content">
                 <!-- 将线条容器独立出来，并让其高度自适应内容 -->
-                <div class="relative pl-12">
+                <div class="relative pl-6 md:pl-12">
                     <div class="timeline-line"></div>
                     
                     <!-- Timeline Item 1: 智元空间 实习 -->
                     <div class="mb-32 relative z-10">
-                        <div class="absolute w-2 h-2 bg-[var(--text)] -left-[49px] top-[10px]"></div>
+                        <div class="absolute w-2 h-2 bg-[var(--text)] -left-[25px] md:-left-[49px] top-[10px]"></div>
                         <div class="flex items-baseline gap-4 mb-3">
-                            <h4 class="text-3xl font-bold font-zh">产品运营实习生</h4>
-                            <span class="text-sm tracking-widest opacity-50 uppercase">Product Ops Intern</span>
+                            <h4 class="text-2xl md:text-3xl font-bold font-zh">产品运营实习生</h4>
+                            <span class="text-xs md:text-sm tracking-widest opacity-50 uppercase">Product Ops Intern</span>
                         </div>
-                        <p class="text-lg mb-6 opacity-80 font-medium">杭州智元空间科技有限公司 / 2025.11 — 2026.04</p>
-                        <div class="leading-relaxed opacity-70 max-w-2xl font-light space-y-2">
+                        <p class="text-base md:text-lg mb-6 opacity-80 font-medium">杭州智元空间科技有限公司 / 2025.11 — 2026.04</p>
+                        <div class="leading-relaxed text-sm md:text-base opacity-70 max-w-2xl font-light space-y-2">
                             <p><strong>运营提效：</strong>负责官方宣发渠道的体系化建设与存量账号激活。建立SOP与数据监测报表，实现账号增长效能超700%的显著提升。</p>
                             <p><strong>业务优化：</strong>精准定位用户痛点，输出竞品调研报告并推动研发端重构产品流程，显著降低了非专业用户的系统准入门槛。</p>
                             <p><strong>海外出海：</strong>统筹海外渠道搭建，制定内容本地化发布SOP，保障出海业务初期的合规性与品牌稳定曝光。</p>
@@ -349,13 +402,13 @@
 
                     <!-- Timeline Item 2: 暗壳科技 实习 -->
                     <div class="mb-32 relative z-10">
-                        <div class="absolute w-2 h-2 bg-transparent border border-[var(--text)] -left-[49px] top-[10px] bg-[var(--bg)]"></div>
+                        <div class="absolute w-2 h-2 bg-transparent border border-[var(--text)] -left-[25px] md:-left-[49px] top-[10px] bg-[var(--bg)]"></div>
                         <div class="flex items-baseline gap-4 mb-3">
-                            <h4 class="text-3xl font-bold font-zh">内容运营实习生</h4>
-                            <span class="text-sm tracking-widest opacity-50 uppercase">Content Ops Intern</span>
+                            <h4 class="text-2xl md:text-3xl font-bold font-zh">内容运营实习生</h4>
+                            <span class="text-xs md:text-sm tracking-widest opacity-50 uppercase">Content Ops Intern</span>
                         </div>
-                        <p class="text-lg mb-6 opacity-80 font-medium">暗壳科技（深圳）有限公司 / 2025.09 — 2025.11</p>
-                        <div class="leading-relaxed opacity-70 max-w-2xl font-light space-y-2">
+                        <p class="text-base md:text-lg mb-6 opacity-80 font-medium">暗壳科技（深圳）有限公司 / 2025.09 — 2025.11</p>
+                        <div class="leading-relaxed text-sm md:text-base opacity-70 max-w-2xl font-light space-y-2">
                             <p>独立负责平台新媒体账号内容策划，通过数据驱动优化，使月度平均曝光量提升30%。</p>
                             <p>作为产品体验官深度参与新功能内测，通过用户访谈与问卷调研系统梳理体验痛点，撰写产品优化报告，累计输出5条结构化产品改进建议，向技术团队清晰传递用户声音。</p>
                         </div>
@@ -363,24 +416,24 @@
 
                     <!-- Timeline Item 3: NTU 硕士 -->
                     <div class="mb-32 relative z-10">
-                        <div class="absolute w-2 h-2 bg-transparent border border-[var(--text)] -left-[49px] top-[10px] bg-[var(--bg)]"></div>
+                        <div class="absolute w-2 h-2 bg-transparent border border-[var(--text)] -left-[25px] md:-left-[49px] top-[10px] bg-[var(--bg)]"></div>
                         <div class="flex items-baseline gap-4 mb-3">
-                            <h4 class="text-3xl font-bold font-zh">国际工程管理 硕士</h4>
-                            <span class="text-sm tracking-widest opacity-50 uppercase">MSc in ICM</span>
+                            <h4 class="text-2xl md:text-3xl font-bold font-zh">国际工程管理 硕士</h4>
+                            <span class="text-xs md:text-sm tracking-widest opacity-50 uppercase">MSc in ICM</span>
                         </div>
-                        <p class="text-lg mb-6 opacity-80 font-medium">南洋理工大学 (NTU) / 2025.08 — 2026.07</p>
-                        <p class="leading-relaxed opacity-70 max-w-2xl font-light">相关课程：工程管理，价值工程与质量管理，国际工程合同与法规，项目规划与控制技术，建筑信息技术，人机交互理论与实践。 </p>
+                        <p class="text-base md:text-lg mb-6 opacity-80 font-medium">南洋理工大学 (NTU) / 2025.08 — 2026.07</p>
+                        <p class="leading-relaxed text-sm md:text-base opacity-70 max-w-2xl font-light">相关课程：工程管理，价值工程与质量管理，国际工程合同与法规，项目规划与控制技术，建筑信息技术，人机交互理论与实践。 </p>
                     </div>
 
                     <!-- Timeline Item 4: 本科 -->
                     <div class="mb-32 relative z-10">
-                        <div class="absolute w-2 h-2 bg-transparent border border-[var(--text)] -left-[49px] top-[10px] bg-[var(--bg)]"></div>
+                        <div class="absolute w-2 h-2 bg-transparent border border-[var(--text)] -left-[25px] md:-left-[49px] top-[10px] bg-[var(--bg)]"></div>
                         <div class="flex items-baseline gap-4 mb-3">
-                            <h4 class="text-3xl font-bold font-zh">建筑学 学士</h4>
-                            <span class="text-sm tracking-widest opacity-50 uppercase">B.Arch</span>
+                            <h4 class="text-2xl md:text-3xl font-bold font-zh">建筑学 学士</h4>
+                            <span class="text-xs md:text-sm tracking-widest opacity-50 uppercase">B.Arch</span>
                         </div>
-                        <p class="text-lg mb-6 opacity-80 font-medium">中国石油大学（华东） / 2020.09 — 2025.07</p>
-                        <div class="leading-relaxed opacity-70 max-w-2xl font-light space-y-2">
+                        <p class="text-base md:text-lg mb-6 opacity-80 font-medium">中国石油大学（华东） / 2020.09 — 2025.07</p>
+                        <div class="leading-relaxed text-sm md:text-base opacity-70 max-w-2xl font-light space-y-2">
                             <p><strong>GPA: 85.4/100</strong>。荣获校级综合一等奖学金，校级社会工作奖学金，“中国好创意”国家二等奖，优秀学生，优秀共青团干部等荣誉。</p>
                             <p>相关课程：建筑设计，建筑节能技术，建筑数字技术，绿色建筑概论，城市设计，建筑物理。</p>
                         </div>
@@ -403,13 +456,13 @@
         </div>
         
         <!-- 横向长图排版 (适合网页/SaaS/大屏) -->
-        <div class="grid md:grid-cols-12 gap-12 items-center h-full pb-20">
-            <div class="md:col-span-8 h-[60vh]">
+        <div class="grid grid-cols-1 md:grid-cols-12 gap-8 md:gap-12 items-center md:h-full pb-12 md:pb-20">
+            <div class="md:col-span-8 h-[40vh] md:h-[60vh] order-1 md:order-none">
                 <div class="w-full h-full project-image rounded-xl cursor-pointer" onclick="openModal('projects/project1/index.html')">
                     <img src="assets/images/project1_cover.jpg" onerror="this.src='https://images.unsplash.com/photo-1460925895917-afdab827c52f?q=80&w=1600&auto=format&fit=crop'" class="w-full h-full object-cover" alt="传统家装行业数字化全链路解决方案">
                 </div>
             </div>
-            <div class="md:col-span-4">
+            <div class="md:col-span-4 order-2 md:order-none">
                 <p class="tracking-[0.2em] uppercase text-xs mb-6 opacity-50">B2B Solution / Product Design</p>
                 <h4 class="text-3xl font-bold mb-6 font-zh leading-tight">传统家装行业<br>数字化全链路解决方案</h4>
                 <p class="leading-relaxed opacity-70 mb-10 font-light">针对小型家装公司的痛点进行深度需求洞察，提供从营销获客到内部管理的完整数字化解决方案，包含三款核心产品设计。</p>
@@ -430,14 +483,14 @@
         </div>
 
         <!-- 文字在左，横向长图在右 -->
-        <div class="grid md:grid-cols-12 gap-12 items-center h-full pb-20 flex-col-reverse md:flex-row">
-            <div class="md:col-span-4">
+        <div class="grid grid-cols-1 md:grid-cols-12 gap-8 md:gap-12 items-center md:h-full pb-12 md:pb-20">
+            <div class="md:col-span-4 order-2 md:order-1">
                 <p class="tracking-[0.2em] uppercase text-xs mb-6 opacity-50">HMI Design / Research Report</p>
                 <h4 class="text-3xl font-bold mb-6 font-zh leading-tight">蔚来 NIO 智能座舱<br>体验与演进趋势研究</h4>
                 <p class="leading-relaxed opacity-70 mb-10 font-light">探讨智能座舱从“驾驶工具”到“移动生活空间”的范式转变，探索未来出行语境下“车服务人”的情感化连接设计。</p>
                 <a href="https://glow-rose-43881094.figma.site" target="_blank" class="inline-block border-b border-[var(--text)] pb-1 hover:opacity-50 transition-opacity text-sm tracking-[0.2em] uppercase cursor-pointer">查看详情 -></a>
             </div>
-            <div class="md:col-span-8 h-[60vh]">
+            <div class="md:col-span-8 h-[40vh] md:h-[60vh] order-1 md:order-2">
                 <a href="https://glow-rose-43881094.figma.site" target="_blank" class="block w-full h-full project-image rounded-xl cursor-pointer">
                     <img src="assets/images/project2_cover.jpg" onerror="this.src='https://images.unsplash.com/photo-1549317661-bd32c8ce0db2?q=80&w=1600&auto=format&fit=crop'" class="w-full h-full object-cover" alt="蔚来 NIO 智能座舱设计">
                 </a>
@@ -457,13 +510,13 @@
         </div>
 
         <!-- 横向长图排版 (适合网页/SaaS/大屏) -->
-        <div class="grid md:grid-cols-12 gap-12 items-center h-full pb-20">
-            <div class="md:col-span-8 h-[60vh]">
+        <div class="grid grid-cols-1 md:grid-cols-12 gap-8 md:gap-12 items-center md:h-full pb-12 md:pb-20">
+            <div class="md:col-span-8 h-[40vh] md:h-[60vh] order-1 md:order-none">
                 <div class="w-full h-full project-image rounded-xl cursor-pointer" onclick="openModal('projects/project3/index.html')">
                     <img src="assets/images/project3_cover.jpg" onerror="this.src='https://images.unsplash.com/photo-1616469829581-73993eb86b02?q=80&w=1600&auto=format&fit=crop'" class="w-full h-full object-cover" alt="FitBox 盲盒轻健身打卡">
                 </div>
             </div>
-            <div class="md:col-span-4">
+            <div class="md:col-span-4 order-2 md:order-none">
                 <p class="tracking-[0.2em] uppercase text-xs mb-6 opacity-50">Mobile App / Gamification</p>
                 <h4 class="text-3xl font-bold mb-6 font-zh leading-tight">FitBox 盲盒轻健身打卡</h4>
                 <p class="leading-relaxed opacity-70 mb-10 font-light">一款主打“盲盒式任务”与“极简记录”的轻量化健身打卡 App。解决决策疲劳与记录繁琐的痛点，用视觉多巴胺培养用户的长期运动习惯。</p>
@@ -484,14 +537,14 @@
         </div>
 
         <!-- 文字在左，横向长图在右 -->
-        <div class="grid md:grid-cols-12 gap-12 items-center h-full pb-20 flex-col-reverse md:flex-row">
-            <div class="md:col-span-4">
+        <div class="grid grid-cols-1 md:grid-cols-12 gap-8 md:gap-12 items-center md:h-full pb-12 md:pb-20">
+            <div class="md:col-span-4 order-2 md:order-1">
                 <p class="tracking-[0.2em] uppercase text-xs mb-6 opacity-50">Mobile App / Lifestyle App</p>
                 <h4 class="text-3xl font-bold mb-6 font-zh leading-tight">个人生活轨迹管家</h4>
                 <p class="leading-relaxed opacity-70 mb-10 font-light">一款集成地图打卡、日常记录与数据汇总的个人生活管理工具，采用现代化UI组件库打造流畅体验。</p>
                 <button onclick="openModal('projects/project4/index.html')" class="inline-block border-b border-[var(--text)] pb-1 hover:opacity-50 transition-opacity text-sm tracking-[0.2em] uppercase cursor-pointer">查看详情 -></button>
             </div>
-            <div class="md:col-span-8 h-[60vh]">
+            <div class="md:col-span-8 h-[40vh] md:h-[60vh] order-1 md:order-2">
                 <div class="w-full h-full project-image rounded-xl cursor-pointer" onclick="openModal('projects/project4/index.html')">
                     <img src="assets/images/project4_cover.jpg" onerror="this.src='https://images.unsplash.com/photo-1512941937669-90a1b58e7e9c?q=80&w=1600&auto=format&fit=crop'" class="w-full h-full object-cover" alt="个人生活轨迹管家">
                 </div>
@@ -501,12 +554,12 @@
 
     <!-- Awards Section (New) -->
     <section id="awards" class="section-full grid-line-top justify-center">
-        <div class="grid md:grid-cols-12 gap-16 items-start h-full pt-12">
+        <div class="grid grid-cols-1 md:grid-cols-12 gap-8 md:gap-16 items-start md:h-full pt-12">
             <!-- 左侧：奖项标题与列表 (加宽至 col-span-5，允许滑动) -->
-            <div class="md:col-span-5 h-[80vh] overflow-y-auto no-scrollbar pr-4 pb-32">
+            <div class="md:col-span-5 h-[40vh] md:h-[80vh] overflow-y-auto no-scrollbar pr-4 pb-8 md:pb-32">
                 <div class="sticky top-0 bg-[var(--bg)] pt-4 pb-4 z-20">
-                    <h2 class="text-xs tracking-[0.3em] uppercase mb-6 opacity-50">03 // Honors & Awards</h2>
-                    <h3 class="text-5xl font-bold font-zh">奖项荣誉</h3>
+                    <h2 class="text-xs tracking-[0.3em] uppercase mb-4 md:mb-6 opacity-50">03 // Honors & Awards</h2>
+                    <h3 class="text-4xl md:text-5xl font-bold font-zh">奖项荣誉</h3>
                 </div>
                 
                 <div class="space-y-8 font-zh border-l border-[var(--text)] pl-6 relative z-0 mt-8">
@@ -578,8 +631,8 @@
             </div>
 
             <!-- 右侧：奖状瀑布流展示 -->
-            <div class="md:col-span-7 h-[80vh] overflow-y-auto no-scrollbar pb-32">
-                <div class="columns-2 md:columns-3 gap-4 space-y-4">
+            <div class="md:col-span-7 md:h-[80vh] md:overflow-y-auto no-scrollbar pb-8 md:pb-32">
+                <div class="columns-2 md:columns-3 gap-3 md:gap-4 space-y-3 md:space-y-4">
                     <div class="break-inside-avoid rounded-lg overflow-hidden bg-[var(--text)]/5 hover:scale-[1.02] transition-transform duration-500 cursor-pointer">
                         <img src="assets/images/award1.jpg" class="w-full h-auto object-cover opacity-90 hover:opacity-100 transition-opacity" alt="Award 1">
                     </div>
@@ -716,12 +769,12 @@
     </section>
 
     <!-- About & Footer -->
-    <section id="about" class="section-full grid-line-top justify-center">
-        <div class="grid md:grid-cols-2 gap-16 items-center">
-            <div class="pr-12">
-                <h2 class="text-xs tracking-[0.3em] uppercase mb-6 opacity-50">05 // Beyond Boundaries</h2>
-                <h3 class="text-5xl font-bold font-zh mb-8">边界之外</h3>
-                <p class="leading-relaxed opacity-80 mb-12 text-sm md:text-base font-light">
+    <section id="about" class="section-full grid-line-top justify-center pb-40 md:pb-0">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-12 md:gap-16 items-center">
+            <div class="pr-0 md:pr-12">
+                <h2 class="text-xs tracking-[0.3em] uppercase mb-4 md:mb-6 opacity-50">05 // Beyond Boundaries</h2>
+                <h3 class="text-4xl md:text-5xl font-bold font-zh mb-6 md:mb-8">边界之外</h3>
+                <p class="leading-relaxed opacity-80 mb-8 md:mb-12 text-sm md:text-base font-light">
                     空间与界面的终点，是体验的起点。我热衷于在理性与感性间寻找平衡：从镜头下的光影构图，到代码构建的参数化形态。我享受通过数字媒介拆解复杂世界的过程，并坚信这种跨界的视角，才是驱动持续创新的底层元能力。
                 </p>
                 
@@ -813,20 +866,20 @@
             </div>
         </div>
         
-        <footer class="absolute bottom-8 left-0 w-full flex flex-col md:flex-row justify-between items-center px-0 text-sm tracking-widest font-mono border-t border-[var(--line)] pt-6 z-10 bg-[var(--bg)]">
+        <footer class="absolute bottom-4 md:bottom-8 left-0 w-full flex flex-col md:flex-row justify-between items-start md:items-center px-0 text-sm tracking-widest font-mono border-t border-[var(--line)] pt-6 z-10 bg-[var(--bg)]">
             <!-- 左侧：联系方式 (放大字体和图标，完全靠左对齐) -->
-            <div class="flex items-center gap-8 opacity-80 lowercase w-full md:w-auto justify-start mb-4 md:mb-0">
+            <div class="flex flex-col md:flex-row items-start md:items-center gap-4 md:gap-8 opacity-80 lowercase w-full md:w-auto justify-start mb-6 md:mb-0">
                 <a href="mailto:chyxin071@outlook.com" class="flex items-center gap-2 hover:opacity-70 transition-opacity">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="opacity-70"><rect x="2" y="4" width="20" height="16" rx="2"></rect><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"></path></svg>
-                    <span class="text-base">chyxin071@outlook.com</span>
+                    <span class="text-sm md:text-base">chyxin071@outlook.com</span>
                 </a>
                 <div class="flex items-center gap-2">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="opacity-70"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>
-                    <span class="text-base">chyxin222</span>
+                    <span class="text-sm md:text-base">chyxin222</span>
                 </div>
             </div>
             <!-- 右侧：版权 -->
-            <span class="opacity-40 uppercase text-xs w-full md:w-auto text-right pr-4">Designed & Coded by 陈于昕</span>
+            <span class="opacity-40 uppercase text-xs w-full md:w-auto text-left md:text-right pr-4">Designed & Coded by 陈于昕</span>
         </footer>
     </section>
 

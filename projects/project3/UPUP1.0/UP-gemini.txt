@@ -1,0 +1,1673 @@
+import React, { useState, useEffect, useRef } from 'react';
+import { 
+  Home, User, Plus, Flame, Clock, Play, Square, X, 
+  ChevronRight, ChevronLeft, ChevronDown, ChevronUp, Activity, Trophy, RefreshCcw, 
+  Dumbbell, Target, Search, Edit3, Trash2, CheckCircle2,
+  Calendar, Share, Camera
+} from 'lucide-react';
+
+// --- Global Data & Utils ---
+const DAYS = [
+  { 
+    day: 'M', date: 16, hasTraining: true, summary: '背部/二头肌', duration: '45:00', 
+    exercises: [
+      { name: '引体向上', unit: '自重', sets: [{weight: 0, reps: 12}, {weight: 0, reps: 10}, {weight: 0, reps: 8}, {weight: 0, reps: 8}] }, 
+      { name: '杠铃划船', unit: 'kg', sets: [{weight: 50, reps: 12}, {weight: 60, reps: 10}, {weight: 60, reps: 10}, {weight: 70, reps: 8}] }
+    ] 
+  },
+  { 
+    day: 'T', date: 17, hasTraining: true, summary: '有氧燃脂', duration: '30:00', 
+    exercises: [{name: '跑步机慢跑', sets: [{duration: 30}]}] 
+  },
+  { day: 'W', date: 18, active: true },
+  { day: 'T', date: 19 },
+  { day: 'F', date: 20 },
+  { day: 'S', date: 21 },
+  { day: 'S', date: 22 },
+];
+
+const CHALLENGE_MODES = [
+  { id: 'novice', name: '新手模式', en: 'NOVICE', desc: '轻松唤醒身体', time: '5min' },
+  { id: 'evolution', name: '进阶模式', en: 'EVOLUTION', desc: 'N+1 动态进阶', time: '10min', recommended: true },
+  { id: 'crazy', name: '疯狂模式', en: 'CRAZY', desc: '挑战极限燃脂', time: '20min' },
+  { id: 'custom', name: '自定义', en: 'CUSTOM', desc: '专属训练计划', time: 'Free' },
+];
+
+// 扩充任务池以支持 3 天不重复的逻辑 (每日单动作随机)
+const TASK_POOL = {
+  novice: [
+    '20个深蹲 × 2组', '15个跪姿俯卧撑 × 2组', '20个卷腹 × 2组', '30秒平板支撑 × 2组',
+    '20个臀桥 × 2组', '30秒靠墙静蹲 × 2组', '20个弓步蹲 × 2组', '30秒高抬腿 × 2组',
+    '15个俯卧撑 × 2组', '20个仰卧起坐 × 2组', '30秒登山跑 × 2组', '20个侧弓步 × 2组',
+    '20个俄罗斯转体 × 2组'
+  ],
+  evolution: [
+    '30个深蹲 × 3组', '20个卷腹 × 3组', '1分钟平板支撑 × 3组', '30个弓步蹲 × 3组',
+    '25个俯卧撑 × 3组', '30个仰卧抬腿 × 3组', '40个深蹲 × 3组', '30秒登山跑 × 3组',
+    '20个引体向上 × 3组', '30个俯卧撑 × 3组', '50个深蹲 × 3组', '30个跳深蹲 × 3组',
+    '1分钟靠墙静蹲 × 3组', '40个俄罗斯转体 × 3组'
+  ],
+  crazy: [
+    '50个俯卧撑 × 4组', '50个深蹲 × 4组', '50个卷腹 × 4组', '1分钟平板支撑 × 4组',
+    '20个引体向上 × 5组', '30个双杠臂屈伸 × 4组', '40个俯卧撑 × 4组', '40个深蹲 × 4组',
+    '100个俯卧撑 × 1组', '100个深蹲 × 1组', '100个卷腹 × 1组', '平板支撑2分钟 × 5组',
+    '50个仰卧抬腿 × 4组', '50个俄罗斯转体 × 4组', '80个深蹲 × 4组', '60个弓步跳 × 4组',
+    '60个俯卧撑 × 4组', '1分钟登山跑 × 4组'
+  ],
+  custom: [
+    '我的专属训练 A',
+    '我的专属训练 B'
+  ]
+};
+
+// 静态动作库
+const STATIC_EXERCISE_DB = {
+  anaerobic: {
+    '胸部': [{ name: '平板卧推', equip: '杠铃' }, { name: '上斜卧推', equip: '杠铃' }, { name: '下斜卧推', equip: '杠铃' }, { name: '窄距卧推', equip: '杠铃' }, { name: '平板哑铃卧推', equip: '哑铃' }, { name: '上斜哑铃卧推', equip: '哑铃' }, { name: '平板飞鸟', equip: '哑铃' }, { name: '上斜飞鸟', equip: '哑铃' }, { name: '绳索夹胸高位到低位的', equip: '绳索' }, { name: '绳索夹胸低位到高位的', equip: '绳索' }, { name: '蝴蝶机夹胸', equip: '器械' }, { name: '器械推胸', equip: '器械' }, { name: '上斜器械推胸', equip: '器械' }, { name: '标准俯卧撑', equip: '自重' }, { name: '宽距俯卧撑', equip: '自重' }, { name: '双杠臂屈伸', equip: '自重' }],
+    '背部': [{ name: '传统硬拉', equip: '杠铃' }, { name: '杠铃划船', equip: '杠铃' }, { name: '罗马尼亚硬拉', equip: '杠铃' }, { name: '单臂哑铃划船', equip: '哑铃' }, { name: '哑铃直腿硬拉', equip: '哑铃' }, { name: '高位下拉宽握', equip: '绳索' }, { name: '高位下拉窄握V把', equip: '绳索' }, { name: '坐姿绳索划船', equip: '绳索' }, { name: '直臂下压', equip: '绳索' }, { name: '坐姿划船机', equip: '器械' }, { name: '高位下拉机', equip: '器械' }, { name: '引体向上正握', equip: '自重' }, { name: '引体向上反握', equip: '自重' }, { name: '反向划船', equip: '自重' }],
+    '肩部': [{ name: '站姿推举', equip: '杠铃' }, { name: '坐姿推举', equip: '杠铃' }, { name: '杠铃直立划船', equip: '杠铃' }, { name: '坐姿哑铃推举', equip: '哑铃' }, { name: '哑铃侧平举', equip: '哑铃' }, { name: '哑铃前平举', equip: '哑铃' }, { name: '哑铃俯身飞鸟', equip: '哑铃' }, { name: '绳索面拉', equip: '绳索' }, { name: '绳索侧平举', equip: '绳索' }, { name: '器械推举', equip: '器械' }, { name: '器械反向飞鸟', equip: '器械' }, { name: '倒立撑辅助', equip: '自重' }, { name: '折刀俯卧撑', equip: '自重' }],
+    '二头肌': [{ name: '杠铃弯举站姿', equip: '杠铃' }, { name: '杠铃弯举牧师椅', equip: '杠铃' }, { name: '哑铃弯举站姿', equip: '哑铃' }, { name: '哑铃锤式弯举', equip: '哑铃' }, { name: '哑铃集中弯举', equip: '哑铃' }, { name: '上斜哑铃弯举', equip: '哑铃' }, { name: '绳索弯举', equip: '绳索' }, { name: '绳索锤式弯举', equip: '绳索' }, { name: '器械弯举', equip: '器械' }, { name: '反握引体向上', equip: '自重' }],
+    '三头肌': [{ name: '窄距卧推', equip: '杠铃' }, { name: '杠铃仰卧臂屈伸', equip: '杠铃' }, { name: '哑铃仰卧臂屈伸', equip: '哑铃' }, { name: '哑铃过顶臂屈伸', equip: '哑铃' }, { name: '哑铃单臂后摆', equip: '哑铃' }, { name: '绳索下压直杆或V把', equip: '绳索' }, { name: '绳索过顶臂屈伸', equip: '绳索' }, { name: '器械臂屈伸', equip: '器械' }, { name: '双杠臂屈伸', equip: '自重' }, { name: '窄距俯卧撑', equip: '自重' }, { name: '板凳臂屈伸', equip: '自重' }],
+    '腿部': [{ name: '深蹲', equip: '杠铃' }, { name: '前蹲', equip: '杠铃' }, { name: '罗马尼亚硬拉', equip: '杠铃' }, { name: '臀推', equip: '杠铃' }, { name: '弓步蹲', equip: '杠铃' }, { name: '哑铃高脚杯深蹲', equip: '哑铃' }, { name: '哑铃保加利亚分腿蹲', equip: '哑铃' }, { name: '哑铃罗马尼亚硬拉', equip: '哑铃' }, { name: '哑铃臀推', equip: '哑铃' }, { name: '绳索后摆', equip: '绳索' }, { name: '腿举', equip: '器械' }, { name: '腿伸展', equip: '器械' }, { name: '腿弯举', equip: '器械' }, { name: '髋外展', equip: '器械' }, { name: '徒手深蹲', equip: '自重' }, { name: '徒手弓步蹲', equip: '自重' }, { name: '徒手臀桥', equip: '自重' }, { name: '徒手保加利亚分腿蹲', equip: '自重' }],
+    '小腿': [{ name: '杠铃站姿提踵', equip: '杠铃' }, { name: '哑铃单腿提踵', equip: '哑铃' }, { name: '站姿提踵机', equip: '器械' }, { name: '坐姿提踵机', equip: '器械' }, { name: '自重站姿提踵', equip: '自重' }, { name: '台阶提踵', equip: '自重' }],
+    '斜方肌': [{ name: '杠铃耸肩', equip: '杠铃' }, { name: '杠铃直立划船', equip: '杠铃' }, { name: '哑铃耸肩', equip: '哑铃' }, { name: '绳索耸肩', equip: '绳索' }],
+    '前臂': [{ name: '杠铃腕弯举', equip: '杠铃' }, { name: '杠铃腕伸', equip: '杠铃' }, { name: '农夫行走', equip: '杠铃' }, { name: '哑铃腕弯举', equip: '哑铃' }, { name: '哑铃锤式弯举', equip: '哑铃' }, { name: '悬垂单杠', equip: '自重' }, { name: '毛巾悬垂', equip: '自重' }],
+    '腹部': [{ name: '卷腹', equip: '自重' }, { name: '仰卧起坐', equip: '自重' }, { name: '悬垂举腿', equip: '自重' }, { name: '平板支撑', equip: '自重' }, { name: '俄罗斯转体', equip: '自重' }, { name: '死虫式', equip: '自重' }, { name: '绳索卷腹', equip: '绳索' }, { name: '器械卷腹', equip: '器械' }],
+    '臀部': [{ name: '杠铃臀推', equip: '杠铃' }, { name: '杠铃罗马尼亚硬拉', equip: '杠铃' }, { name: '杠铃深蹲', equip: '杠铃' }, { name: '哑铃臀推', equip: '哑铃' }, { name: '哑铃罗马尼亚硬拉', equip: '哑铃' }, { name: '哑铃单腿硬拉', equip: '哑铃' }, { name: '绳索后摆', equip: '绳索' }, { name: '臀推机', equip: '器械' }, { name: '髋外展机', equip: '器械' }, { name: '徒手臀桥', equip: '自重' }, { name: '徒手单腿臀桥', equip: '自重' }, { name: '徒手臀推', equip: '自重' }, { name: '弹力带臀桥', equip: '弹力带' }, { name: '弹力带侧向行走', equip: '弹力带' }, { name: '弹力带蚌式开合', equip: '弹力带' }],
+    '核心稳定': [{ name: '平板支撑', equip: '自重' }, { name: '侧平板支撑', equip: '自重' }, { name: '死虫式', equip: '自重' }, { name: '鸟狗式', equip: '自重' }, { name: '滚轮前推', equip: '自重' }, { name: 'L-sit', equip: '自重' }, { name: '土耳其起立', equip: '哑铃' }, { name: '哑铃风车', equip: '哑铃' }, { name: 'Pallof推举抗旋转', equip: '绳索' }],
+    '功能性': [{ name: '壶铃摇摆', equip: '壶铃' }, { name: '壶铃高翻', equip: '壶铃' }, { name: '壶铃抓举', equip: '壶铃' }, { name: '药球摔砸', equip: '药球' }, { name: '药球抛掷', equip: '药球' }, { name: '波比跳', equip: '自重' }, { name: '箱跳', equip: '自重' }, { name: '登山者', equip: '自重' }, { name: '深蹲跳', equip: '自重' }, { name: '开合跳', equip: '自重' }, { name: '哑铃抓举', equip: '哑铃' }, { name: '哑铃摇摆', equip: '哑铃' }]
+  },
+  aerobic: {
+    '跑步': [{ name: '跑步机慢跑', equip: '无' }, { name: '室外慢跑', equip: '无' }, { name: '冲刺跑', equip: '无' }],
+    '骑行': [{ name: '动感单车', equip: '无' }, { name: '室外骑行', equip: '无' }],
+    '划船': [{ name: '划船机', equip: '无' }],
+    '其他': [{ name: '椭圆机', equip: '无' }, { name: '跳绳', equip: '无' }, { name: '游泳', equip: '无' }]
+  },
+  stretch: {
+    '静态拉伸': [{ name: '胸部拉伸', equip: '无' }, { name: '背部拉伸', equip: '无' }, { name: '腘绳肌拉伸', equip: '无' }, { name: '股四头肌拉伸', equip: '无' }, { name: '臀部拉伸', equip: '无' }, { name: '肩部拉伸', equip: '无' }],
+    '动态拉伸': [{ name: '手臂画圈', equip: '无' }, { name: '腿部摆动', equip: '无' }, { name: '弓步行走', equip: '无' }, { name: '世界上最伟大的拉伸', equip: '无' }],
+    '瑜伽': [{ name: '下犬式', equip: '无' }, { name: '婴儿式', equip: '无' }, { name: '猫牛式', equip: '无' }, { name: '仰卧扭转', equip: '无' }],
+    '泡沫轴': [{ name: '背部放松', equip: '无' }, { name: '臀部放松', equip: '无' }, { name: '大腿放松', equip: '无' }, { name: '小腿放松', equip: '无' }]
+  }
+};
+
+const getEquipTypes = (type) => {
+  if (type === 'anaerobic') return ['置顶', '杠铃', '哑铃', '器械', '绳索', '自重', '壶铃', '药球', '弹力带'];
+  return ['全部'];
+};
+
+const triggerCompletionEffects = () => {
+  if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
+  const colors = ['#E8F583', '#F0C7FF', '#AD9BF0', '#FFFFFF'];
+  for (let i = 0; i < 40; i++) {
+    const p = document.createElement('div');
+    p.style.position = 'fixed';
+    p.style.left = '50%';
+    p.style.top = '50%';
+    p.style.width = `${Math.random() * 8 + 4}px`;
+    p.style.height = p.style.width;
+    p.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+    p.style.borderRadius = '50%';
+    p.style.pointerEvents = 'none';
+    p.style.zIndex = '9999';
+    document.body.appendChild(p);
+    const angle = Math.random() * Math.PI * 2;
+    const velocity = 80 + Math.random() * 150;
+    const tx = Math.cos(angle) * velocity;
+    const ty = Math.sin(angle) * velocity;
+    p.animate([
+      { transform: 'translate(-50%, -50%) scale(1)', opacity: 1 },
+      { transform: `translate(calc(-50% + ${tx}px), calc(-50% + ${ty}px)) scale(0)`, opacity: 0 }
+    ], { duration: 600 + Math.random() * 400, easing: 'cubic-bezier(0.25, 1, 0.5, 1)' }).onfinish = () => p.remove();
+  }
+};
+
+const getMuscleSummary = (exs, type) => {
+  const typeMap = { 'anaerobic': '无氧训练', 'aerobic': '有氧训练', 'stretch': '拉伸恢复' };
+  if (type !== 'anaerobic') return typeMap[type] || '训练';
+  
+  const muscles = new Set();
+  exs.forEach(ex => {
+    if (ex.isCustom && ex.muscle) {
+      muscles.add(ex.muscle);
+      return;
+    }
+    for (const [muscleGroup, list] of Object.entries(STATIC_EXERCISE_DB.anaerobic)) {
+      if (list.find(item => item.name === ex.name)) {
+        muscles.add(muscleGroup);
+        break;
+      }
+    }
+  });
+
+  if (muscles.size === 0) return '综合力量训练';
+  const arr = Array.from(muscles);
+  return arr.slice(0, 3).join('/') + (arr.length > 3 ? '等' : '');
+};
+
+// --- Components ---
+
+const Toast = ({ message, visible }) => (
+  <div className={`absolute top-12 left-1/2 -translate-x-1/2 bg-[#E8F583] text-[#202020] px-6 py-3 rounded-full font-bold shadow-[0_10px_30px_rgba(232,245,131,0.3)] transition-all duration-300 z-[100] flex items-center gap-2 ${visible ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4 pointer-events-none'}`}>
+    <CheckCircle2 size={18} />
+    {message}
+  </div>
+);
+
+// --- Main App Component ---
+export default function App() {
+  const [currentTab, setCurrentTab] = useState('home');
+  const [showTrainingTypeDrawer, setShowTrainingTypeDrawer] = useState(false);
+  const [showActionSelector, setShowActionSelector] = useState(false);
+  const [showActiveTraining, setShowActiveTraining] = useState(false);
+  const [showEndSummary, setShowEndSummary] = useState(false);
+  const [showProfileEdit, setShowProfileEdit] = useState(false);
+  const [showCalendar, setShowCalendar] = useState(false);
+  
+  const [activeChallengeState, setActiveChallengeState] = useState(null); 
+  
+  // App State
+  const [selectedModeId, setSelectedModeId] = useState('evolution'); 
+  const [isCustomDaily, setIsCustomDaily] = useState(false);
+  const [customTaskText, setCustomTaskText] = useState('我的专属挑战 100个俯卧撑'); 
+  const [activeTaskText, setActiveTaskText] = useState(''); 
+  const [recentChallenges, setRecentChallenges] = useState(['20个俯卧撑 × 2组', '15个波比跳 × 2组']); 
+  
+  // Profile Data
+  const [profileData, setProfileData] = useState({ username: 'Alex Walker', gender: 'Male', weight: 72, height: 178, bodyFat: 16 });
+  
+  // PR Tracking
+  const [personalRecords, setPersonalRecords] = useState({});
+
+  // Training Flow State & Global Timer
+  const [currentTrainingType, setCurrentTrainingType] = useState(''); 
+  const [activeExercises, setActiveExercises] = useState([]);
+  const [todayTrainings, setTodayTrainings] = useState([]); 
+  
+  const [isTrainingOngoing, setIsTrainingOngoing] = useState(false);
+  const [trainingTime, setTrainingTime] = useState(0);
+
+  const [streak, setStreak] = useState(200);
+  const [isChallengeCompletedToday, setIsChallengeCompletedToday] = useState(false);
+  const [selectedHistoryDate, setSelectedHistoryDate] = useState(null);
+  const [toastMsg, setToastMsg] = useState({ text: '', visible: false });
+  const [customExercises, setCustomExercises] = useState([]);
+
+  const isTrainingCompletedToday = todayTrainings.length > 0;
+  const isAnyCompleted = isChallengeCompletedToday || isTrainingCompletedToday;
+
+  useEffect(() => {
+    let interval = null;
+    if (isTrainingOngoing) {
+      interval = setInterval(() => setTrainingTime(t => t + 1), 1000);
+    }
+    return () => clearInterval(interval);
+  }, [isTrainingOngoing]);
+
+  useEffect(() => {
+    const savedCustom = localStorage.getItem('fitnessApp_customExercises');
+    if (savedCustom) setCustomExercises(JSON.parse(savedCustom));
+
+    const savedPRs = localStorage.getItem('fitnessApp_PRs');
+    if (savedPRs) setPersonalRecords(JSON.parse(savedPRs));
+  }, []);
+
+  const saveCustomExercise = (newEx) => {
+    const updated = [...customExercises, { ...newEx, id: Date.now(), isCustom: true }];
+    setCustomExercises(updated);
+    localStorage.setItem('fitnessApp_customExercises', JSON.stringify(updated));
+    showToast("自定义动作已保存");
+  };
+
+  const deleteCustomExercise = (id) => {
+    const updated = customExercises.filter(e => e.id !== id);
+    setCustomExercises(updated);
+    localStorage.setItem('fitnessApp_customExercises', JSON.stringify(updated));
+  };
+
+  const showToast = (text) => {
+    setToastMsg({ text, visible: true });
+    setTimeout(() => setToastMsg({ text: '', visible: false }), 2500);
+  };
+
+  // PR Handler
+  const checkAndUpdatePR = (exName, weight, unit) => {
+    const weightKg = unit === 'lbs' ? weight * 0.453592 : weight;
+    const roundedKg = Math.round(weightKg * 10) / 10;
+    const currentPR = personalRecords[exName] || 0;
+    
+    if (roundedKg > currentPR) {
+      const newPRs = { ...personalRecords, [exName]: roundedKg };
+      setPersonalRecords(newPRs);
+      localStorage.setItem('fitnessApp_PRs', JSON.stringify(newPRs));
+      showToast(`🎉 新纪录！${exName} ${roundedKg}kg`);
+    }
+  };
+
+  const handleCompleteChallenge = (taskDone) => {
+    setActiveChallengeState(null);
+    if (!isChallengeCompletedToday && !isTrainingCompletedToday) setStreak(s => s + 1);
+    setIsChallengeCompletedToday(true);
+    setRecentChallenges(prev => [taskDone, ...prev].slice(0, 3));
+    triggerCompletionEffects();
+    showToast("挑战打卡成功！ 🎉");
+  };
+
+  const handleFinishTraining = (trainingData) => {
+    setIsTrainingOngoing(false);
+    setShowActiveTraining(false);
+    setTodayTrainings(prev => [...prev, trainingData]);
+    setShowEndSummary(true);
+    triggerCompletionEffects();
+    if (!isChallengeCompletedToday && !isTrainingCompletedToday) {
+      setStreak(s => s + 1);
+    }
+  };
+
+  const handlePlusClick = () => {
+    if (isTrainingOngoing) {
+      setShowActiveTraining(true);
+    } else {
+      setShowTrainingTypeDrawer(true);
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-[#121212] text-white flex justify-center font-['DIN_Alternate','Microsoft_YaHei','sans-serif']">
+      <style dangerouslySetInnerHTML={{__html: `
+        * { -ms-overflow-style: none; scrollbar-width: none; }
+        *::-webkit-scrollbar { display: none; }
+        input[type=number]::-webkit-inner-spin-button, 
+        input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+        @font-face {
+          font-family: 'DIN_Alternate';
+          src: local('DIN Alternate'), local('DINAlternate-Bold');
+          font-weight: bold;
+        }
+      `}} />
+
+      <div className="w-full max-w-md bg-[#202020] h-[100dvh] relative overflow-y-auto shadow-2xl flex flex-col">
+        
+        <Toast message={toastMsg.text} visible={toastMsg.visible} />
+
+        {/* Content Area */}
+        <div className="flex-1 pb-32">
+          {currentTab === 'home' && (
+            <HomeTab 
+              selectedModeId={selectedModeId}
+              onOpenChallenge={() => setActiveChallengeState('prep')} 
+              isChallengeCompletedToday={isChallengeCompletedToday}
+              isAnyCompleted={isAnyCompleted}
+              streak={streak}
+              todayTrainings={todayTrainings}
+              onSelectHistory={setSelectedHistoryDate}
+              onOpenCalendar={() => setShowCalendar(true)}
+              onEditProfile={() => setShowProfileEdit(true)}
+            />
+          )}
+          {currentTab === 'profile' && (
+            <ProfileTab 
+              streak={streak} 
+              isAnyCompleted={isAnyCompleted}
+              selectedModeId={selectedModeId}
+              onSelectMode={setSelectedModeId}
+              isCustomDaily={isCustomDaily}
+              setIsCustomDaily={setIsCustomDaily}
+              customTaskText={customTaskText}
+              setCustomTaskText={setCustomTaskText}
+              profileData={profileData}
+              setProfileData={setProfileData}
+              onOpenCalendar={() => setShowCalendar(true)}
+              onEditProfile={() => setShowProfileEdit(true)}
+            />
+          )}
+        </div>
+
+        {/* Bottom Navigation */}
+        <div className="fixed bottom-0 w-full max-w-md px-6 pb-8 pt-4 bg-gradient-to-t from-[#151515] via-[#202020]/80 to-transparent pointer-events-none z-30">
+          <div className="bg-white rounded-[40px] h-[72px] flex justify-between items-center px-10 relative pointer-events-auto shadow-[0_10px_40px_rgba(0,0,0,0.5)]">
+            <button 
+              onClick={() => setCurrentTab('home')}
+              className={`w-12 h-12 rounded-full flex items-center justify-center transition-colors ${currentTab === 'home' ? 'bg-[#202020] text-[#E8F583]' : 'text-gray-400 bg-transparent hover:bg-gray-100'}`}
+            >
+              <Home size={24} />
+            </button>
+
+            {/* Central Navigation "+" / Return to Training Button */}
+            <button 
+              onClick={handlePlusClick}
+              className={`absolute left-1/2 -top-6 -translate-x-1/2 w-20 h-20 rounded-full flex items-center justify-center active:scale-95 transition-all duration-300
+                ${isTrainingOngoing && !showActiveTraining 
+                  ? 'bg-[#E8F583] shadow-[0_10px_30px_rgba(232,245,131,0.5)]' 
+                  : 'bg-[#AD9BF0] shadow-[0_10px_30px_rgba(173,155,240,0.4)]'}`}
+            >
+              {isTrainingOngoing && !showActiveTraining ? (
+                <div className="flex flex-col items-center text-[#202020] pt-1 font-['DIN_Alternate',sans-serif]">
+                  <Activity size={26} className="animate-pulse mb-0.5" strokeWidth={3} />
+                  <span className="font-mono text-[13px] font-bold leading-none tracking-tighter">
+                    {Math.floor(trainingTime / 60).toString().padStart(2, '0')}:{(trainingTime % 60).toString().padStart(2, '0')}
+                  </span>
+                </div>
+              ) : (
+                <Plus size={40} color="#202020" strokeWidth={3} />
+              )}
+            </button>
+
+            <button 
+              onClick={() => setCurrentTab('profile')}
+              className={`w-12 h-12 rounded-full flex items-center justify-center transition-colors ${currentTab === 'profile' ? 'bg-[#202020] text-[#E8F583]' : 'text-gray-400 bg-transparent hover:bg-gray-100'}`}
+            >
+              <User size={24} />
+            </button>
+          </div>
+        </div>
+
+        {/* Modals & Overlays */}
+        {showProfileEdit && (
+          <ProfileEditModal 
+            data={profileData} 
+            onSave={(newData) => { setProfileData(newData); setShowProfileEdit(false); showToast('个人资料已保存'); }}
+            onClose={() => setShowProfileEdit(false)}
+          />
+        )}
+
+        {showCalendar && (
+          <CalendarHistoryModal 
+            onClose={() => setShowCalendar(false)} 
+            isChallengeCompletedToday={isChallengeCompletedToday}
+            isTrainingCompletedToday={isTrainingCompletedToday}
+            todayTrainings={todayTrainings}
+            activeTaskText={activeTaskText}
+          />
+        )}
+
+        {activeChallengeState === 'prep' && (
+          <ChallengePrepScreen 
+            modeId={selectedModeId}
+            customTaskText={customTaskText}
+            recentChallenges={recentChallenges}
+            onClose={() => setActiveChallengeState(null)}
+            onStart={(taskName) => {
+              setActiveTaskText(taskName);
+              setActiveChallengeState('executing');
+            }}
+          />
+        )}
+        
+        {activeChallengeState === 'executing' && (
+          <ActiveChallengeScreen 
+            modeId={selectedModeId} 
+            taskName={activeTaskText}
+            onClose={() => setActiveChallengeState(null)}
+            onComplete={() => handleCompleteChallenge(activeTaskText)}
+          />
+        )}
+
+        {showTrainingTypeDrawer && (
+          <TrainingDrawer 
+            onClose={() => setShowTrainingTypeDrawer(false)} 
+            onSelectType={(typeId) => {
+              setCurrentTrainingType(typeId);
+              setShowTrainingTypeDrawer(false);
+              setActiveExercises([]); 
+              setTrainingTime(0);
+              setIsTrainingOngoing(true);
+              setShowActiveTraining(true);
+            }}
+          />
+        )}
+
+        {showActionSelector && (
+          <ActionSelectionScreen 
+            type={currentTrainingType}
+            customExercises={customExercises}
+            onSaveCustom={saveCustomExercise}
+            onDeleteCustom={deleteCustomExercise}
+            onClose={() => setShowActionSelector(false)}
+            onSelectAction={(action) => {
+              const isCardio = currentTrainingType === 'aerobic' || currentTrainingType === 'stretch';
+              const initialSet = isCardio 
+                ? { id: Date.now(), duration: 10, completed: false }
+                : { id: Date.now(), weight: '', reps: 10, completed: false };
+
+              setActiveExercises(prev => [...prev, { ...action, id: Date.now() + Math.random(), sets: [initialSet], isCollapsed: false, unit: 'kg' }]);
+              setShowActionSelector(false);
+            }}
+          />
+        )}
+
+        {showActiveTraining && (
+          <ActiveTrainingScreen 
+            type={currentTrainingType}
+            exercises={activeExercises}
+            setExercises={setActiveExercises}
+            trainingTime={trainingTime}
+            personalRecords={personalRecords}
+            onCheckPR={checkAndUpdatePR}
+            onMinimize={() => setShowActiveTraining(false)} 
+            onComplete={(data) => handleFinishTraining(data)}
+            onAddAction={() => setShowActionSelector(true)}
+          />
+        )}
+
+        {showEndSummary && (
+          <EndSummaryScreen 
+            data={todayTrainings[todayTrainings.length - 1]} 
+            onClose={() => setShowEndSummary(false)}
+            onExport={() => showToast("训练数据已成功导出！")}
+          />
+        )}
+
+        {selectedHistoryDate && (
+          <HistoryModal 
+            data={selectedHistoryDate} 
+            onClose={() => setSelectedHistoryDate(null)} 
+          />
+        )}
+      </div>
+    </div>
+  );
+}
+
+// --- Home Tab ---
+function HomeTab({ selectedModeId, onOpenChallenge, isChallengeCompletedToday, isAnyCompleted, streak, todayTrainings, onSelectHistory, onOpenCalendar, onEditProfile }) {
+  const hasStreak = streak > 0;
+  
+  let fireOuterClass = '';
+  let fireInnerClass = '';
+  
+  if (isAnyCompleted) {
+    fireOuterClass = 'fill-orange-500 drop-shadow-[0_0_15px_rgba(255,165,0,0.8)]';
+    fireInnerClass = 'fill-yellow-300';
+  } else if (hasStreak) {
+    fireOuterClass = 'fill-orange-500 drop-shadow-[0_0_15px_rgba(255,165,0,0.6)] animate-[pulse_2.5s_ease-in-out_infinite] opacity-90';
+    fireInnerClass = 'fill-yellow-300 opacity-90';
+  } else {
+    fireOuterClass = 'fill-[#444444] opacity-50';
+    fireInnerClass = 'fill-[#666666] opacity-50';
+  }
+
+  const currentMode = CHALLENGE_MODES.find(m => m.id === selectedModeId) || CHALLENGE_MODES[1];
+
+  return (
+    <div className="px-6 pt-14 animate-in fade-in slide-in-from-bottom-4 duration-500 font-['Microsoft_YaHei',sans-serif]">
+      <div className="flex justify-between items-start mb-8">
+        <div>
+          <h2 className="text-xl font-light text-[#CCCCCC] mb-1 tracking-wider font-['DIN_Alternate',sans-serif] uppercase">Your Activity</h2>
+          <h1 className="text-3xl font-bold text-white tracking-wide font-['DIN_Alternate',sans-serif]">JULY 2026</h1>
+        </div>
+        <div 
+          onClick={onEditProfile}
+          className="w-12 h-12 rounded-full bg-[#c4b5fd] flex items-center justify-center border-2 border-[#202020] shadow-[0_0_0_2px_rgba(255,255,255,0.1)] cursor-pointer active:scale-95 transition-transform"
+        >
+          <User size={24} className="text-[#202020]" />
+        </div>
+      </div>
+
+      <div className="flex justify-between items-center mb-8">
+        {DAYS.map((d, i) => {
+          const isToday = d.active;
+          const isCheckedIn = d.hasTraining || (isToday && isAnyCompleted);
+          
+          return (
+            <div key={i} className="flex flex-col items-center gap-3 cursor-pointer" onClick={() => d.hasTraining ? onSelectHistory(d) : null}>
+              <span className="text-[#888888] text-[13px] font-bold font-['DIN_Alternate',sans-serif]">{d.day}</span>
+              <div className={`w-11 h-11 rounded-full flex items-center justify-center text-sm font-bold font-['DIN_Alternate',sans-serif] transition-all relative
+                ${isToday ? 'scale-110 shadow-[0_0_15px_rgba(232,245,131,0.2)]' : ''}
+                ${isCheckedIn 
+                  ? 'bg-[#E8F583] text-[#202020]' 
+                  : isToday 
+                    ? 'border-2 border-[#E8F583] text-[#E8F583] bg-transparent' 
+                    : 'text-[#CCCCCC] border border-white/10 hover:border-white/30'}`}
+              >
+                {d.date}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      <div 
+        onClick={isChallengeCompletedToday ? undefined : onOpenChallenge}
+        className={`w-full rounded-[24px] p-6 mb-6 relative overflow-hidden transition-all duration-300 shadow-xl flex justify-between items-center min-h-[120px]
+          ${isChallengeCompletedToday 
+            ? 'bg-[#2A2A2A] border border-white/5 cursor-default' 
+            : 'bg-[#E8F583] cursor-pointer hover:scale-[0.98] active:scale-[0.95]'}`}
+      >
+        <div className="relative z-10 flex flex-col items-start text-left">
+          <h2 className={`text-[22px] font-black tracking-widest uppercase font-['DIN_Alternate',sans-serif] ${isChallengeCompletedToday ? 'text-white/60' : 'text-[#202020]'}`}>
+            READY FOR CHALLENGE?
+          </h2>
+          <div className={`mt-2.5 px-3 py-1 border-2 rounded-lg text-[13px] font-bold uppercase tracking-[0.1em] font-['DIN_Alternate',sans-serif] 
+            ${isChallengeCompletedToday ? 'border-white/20 text-white/40' : 'border-[#202020] text-[#202020]'}`}>
+            {currentMode.en}
+          </div>
+        </div>
+        
+        {!isChallengeCompletedToday ? (
+          <div className="w-12 h-12 rounded-full bg-[#202020] flex items-center justify-center shrink-0 ml-4 shadow-lg">
+            <Play size={22} className="text-[#E8F583] translate-x-0.5" fill="currentColor"/>
+          </div>
+        ) : (
+          <div className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center shrink-0 ml-4">
+            <CheckCircle2 size={26} className="text-white/40" />
+          </div>
+        )}
+      </div>
+
+      <div className="grid grid-cols-2 gap-4 mb-8">
+        <div 
+          onClick={() => {
+            if (todayTrainings.length > 0) {
+              const summary = todayTrainings.map(t => t.muscleSummary).join(' + ');
+              const allExercises = todayTrainings.flatMap(t => t.exercises); // 传递完整动作详情给历史弹窗
+              onSelectHistory({
+                date: 18,
+                summary: '今日训练',
+                duration: `${todayTrainings.length} 次训练`,
+                exercises: allExercises
+              });
+            }
+          }}
+          className={`bg-[#F0C7FF] rounded-[24px] p-5 text-[#202020] flex flex-col h-40 shadow-lg relative overflow-hidden ${todayTrainings.length > 0 ? 'cursor-pointer active:scale-95 transition-transform' : ''}`}
+        >
+          <span className="text-base font-bold z-10 shrink-0 font-['DIN_Alternate',sans-serif] uppercase tracking-wider">TRAINING</span>
+          
+          <div className={`z-10 flex-1 overflow-y-auto no-scrollbar flex flex-col ${todayTrainings.length <= 1 ? 'justify-end' : 'justify-start mt-3'}`}>
+            {todayTrainings.length === 0 ? (
+               <div className="text-xl font-bold opacity-60 font-['DIN_Alternate',sans-serif] tracking-wide uppercase">NO RECORD</div>
+            ) : todayTrainings.length === 1 ? (
+               <div>
+                 <div className="text-xl font-bold leading-tight line-clamp-2 font-['Microsoft_YaHei',sans-serif]">
+                   {todayTrainings[0].muscleSummary}
+                 </div>
+                 <div className="text-sm opacity-80 mt-1 font-bold font-['DIN_Alternate',sans-serif]">{todayTrainings[0].exercises.length} ACT · {todayTrainings[0].duration}</div>
+               </div>
+            ) : (
+               <div className="flex flex-col gap-2 pb-1">
+                 {todayTrainings.map((t, idx) => (
+                   <div key={idx} className="bg-black/5 p-2.5 rounded-xl border border-black/5 flex justify-between items-center shrink-0">
+                     <div className="text-[14px] font-bold leading-tight line-clamp-1 text-[#202020] font-['Microsoft_YaHei',sans-serif]">{t.muscleSummary}</div>
+                     <div className="text-[11px] opacity-70 font-bold whitespace-nowrap ml-2 font-['DIN_Alternate',sans-serif]">{t.exercises.length} ACT</div>
+                   </div>
+                 ))}
+               </div>
+            )}
+          </div>
+        </div>
+
+        <div onClick={onOpenCalendar} className="bg-[#AD9BF0] rounded-[24px] p-5 text-[#202020] flex flex-col justify-center h-40 relative shadow-lg overflow-hidden cursor-pointer active:scale-95 transition-transform group">
+          <div className="z-10 flex flex-col items-start relative top-1">
+            <div className="text-[12px] font-bold tracking-[0.15em] mb-1.5 uppercase font-['DIN_Alternate',sans-serif] opacity-80">
+              STREAK DAYS
+            </div>
+            <div className="text-[48px] font-bold font-['DIN_Alternate',sans-serif] leading-none tracking-tighter">
+              {streak}
+            </div>
+          </div>
+          <div className="absolute -right-4 -bottom-2 w-28 h-28 flex items-center justify-center pointer-events-none">
+            <Flame size={140} strokeWidth={0} className={`absolute transition-all duration-500 ${fireOuterClass}`} />
+            <Flame size={80} strokeWidth={0} className={`absolute mt-6 transition-all duration-500 ${fireInnerClass}`} />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// --- Challenge Prep & Execution ---
+function ChallengePrepScreen({ modeId, customTaskText, recentChallenges, onClose, onStart }) {
+  const mode = CHALLENGE_MODES.find(m => m.id === modeId) || CHALLENGE_MODES[1];
+  
+  const getAvailableTasks = () => {
+    if (modeId === 'custom') return [customTaskText];
+    const allTasks = TASK_POOL[modeId] || TASK_POOL['evolution'];
+    const filtered = allTasks.filter(t => !recentChallenges.includes(t));
+    return filtered.length > 0 ? filtered : allTasks; 
+  };
+
+  const tasks = getAvailableTasks();
+  const [taskIndex, setTaskIndex] = useState(Math.floor(Math.random() * tasks.length));
+  const [swaps, setSwaps] = useState(modeId === 'custom' ? 0 : 3);
+  const [animState, setAnimState] = useState('idle');
+
+  const handleSwap = () => {
+    if (swaps <= 0 || animState !== 'idle' || tasks.length <= 1) return;
+    setAnimState('out');
+    setTimeout(() => {
+      setTaskIndex(prev => (prev + 1) % tasks.length);
+      setSwaps(s => s - 1);
+      setAnimState('in'); 
+      requestAnimationFrame(() => requestAnimationFrame(() => setAnimState('idle')));
+    }, 200); 
+  };
+
+  return (
+    <div className="absolute inset-0 z-50 bg-[#202020] flex flex-col animate-in zoom-in-95 fade-in duration-300 origin-top font-['Microsoft_YaHei',sans-serif]">
+      <div className="px-6 pt-14 pb-4 flex justify-between items-center z-10 bg-[#202020]">
+        <button onClick={onClose} className="w-10 h-10 bg-white/10 rounded-full flex items-center justify-center text-white active:scale-90 transition-transform">
+          <X size={20} />
+        </button>
+        <span className="text-lg font-bold tracking-wide font-['Microsoft_YaHei',sans-serif]">今日挑战</span>
+        <div className="w-10"></div>
+      </div>
+      <div className="flex-1 flex flex-col px-6 pb-12">
+        <div className="flex-1 relative mt-4 overflow-hidden rounded-[32px]">
+          <div className={`w-full h-full absolute inset-0 bg-[#2A2A2A] shadow-[0_20px_50px_rgba(0,0,0,0.5)] border border-white/5 flex flex-col items-center justify-center p-8 ${animState === 'idle' ? 'translate-x-0 opacity-100 transition-all duration-300 ease-out' : ''} ${animState === 'out' ? '-translate-x-full opacity-0 transition-all duration-200 ease-in' : ''} ${animState === 'in' ? 'translate-x-full opacity-0 transition-none' : ''}`}>
+            <div className="w-20 h-20 rounded-full bg-[#E8F583]/20 flex items-center justify-center mb-6">
+              <Target size={40} className="text-[#E8F583]" />
+            </div>
+            <div className="text-[#E8F583] text-[13px] font-bold tracking-[0.1em] uppercase mb-6 bg-[#E8F583]/10 px-4 py-1.5 rounded-lg font-['DIN_Alternate',sans-serif]">{mode.en}</div>
+            <h3 className="text-2xl font-bold text-white text-center leading-relaxed mb-4 whitespace-pre-wrap">{tasks[taskIndex]}</h3>
+            <p className="text-[#888888] font-medium flex items-center gap-2 mt-4 font-['DIN_Alternate',sans-serif]"><Clock size={16} /> {mode.time}</p>
+          </div>
+        </div>
+        <div className="mt-8 flex gap-4">
+          <button onClick={handleSwap} disabled={swaps <= 0 || animState !== 'idle' || tasks.length <= 1} className={`flex-1 py-5 rounded-2xl font-bold text-lg flex justify-center items-center gap-2 transition-all ${swaps > 0 && tasks.length > 1 ? 'bg-[#303030] text-white hover:bg-[#404040] active:scale-95' : 'bg-[#2A2A2A] text-[#555] cursor-not-allowed'}`}>
+            <RefreshCcw size={20} className={animState !== 'idle' ? 'animate-spin' : ''} /> 换一换 ({swaps})
+          </button>
+          <button onClick={() => onStart(tasks[taskIndex])} className="flex-1 py-5 rounded-2xl bg-[#E8F583] text-[#202020] font-bold text-lg flex justify-center items-center active:scale-95 transition-all shadow-[0_0_20px_rgba(232,245,131,0.2)]">
+            开始挑战
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ActiveChallengeScreen({ modeId, taskName, onClose, onComplete }) {
+  const mode = CHALLENGE_MODES.find(m => m.id === modeId) || CHALLENGE_MODES[1];
+  const [timeElapsed, setTimeElapsed] = useState(0); 
+  const [isActive, setIsActive] = useState(false);
+
+  useEffect(() => {
+    let interval = null;
+    if (isActive) interval = setInterval(() => setTimeElapsed(t => t + 1), 1000);
+    return () => clearInterval(interval);
+  }, [isActive]);
+
+  const mins = Math.floor(timeElapsed / 60);
+  const secs = timeElapsed % 60;
+
+  return (
+    <div className="absolute inset-0 z-50 bg-[#151515] flex flex-col animate-in slide-in-from-right duration-300 font-['Microsoft_YaHei',sans-serif]">
+      <div className="px-6 pt-14 pb-4 flex justify-between items-center bg-[#151515] z-10 border-b border-white/5">
+        <button onClick={onClose} className="w-10 h-10 bg-white/5 rounded-full flex items-center justify-center text-white active:scale-90"><X size={20} /></button>
+        <div className="flex items-center gap-2 text-[#E8F583] font-bold text-sm tracking-widest bg-[#E8F583]/10 px-4 py-1.5 rounded-full"><Activity size={16} /> 执行中</div>
+        <div className="w-10"></div>
+      </div>
+      <div className="flex-1 flex flex-col items-center justify-center px-6 relative">
+        <div className="w-full flex flex-col items-center justify-center mb-16 px-4 text-center">
+          <div className="w-16 h-16 rounded-full bg-[#2A2A2A] flex items-center justify-center mb-6 shadow-lg border border-white/5"><Target size={32} className="text-[#E8F583]" /></div>
+          <h2 className="text-2xl font-bold text-white mb-6 leading-relaxed whitespace-pre-wrap">{taskName || mode.name}</h2>
+          <div className="text-[#888888] font-medium tracking-widest uppercase font-['DIN_Alternate',sans-serif]">{mode.en} · GO FOR IT</div>
+        </div>
+        <div className="text-[80px] font-mono font-medium text-white mb-12 tracking-tighter tabular-nums drop-shadow-[0_0_15px_rgba(255,255,255,0.2)] font-['DIN_Alternate',sans-serif]">
+          {mins.toString().padStart(2, '0')}:{secs.toString().padStart(2, '0')}
+        </div>
+        <div className="flex gap-4 w-full max-w-sm">
+          <button onClick={() => setIsActive(!isActive)} className="w-20 h-20 shrink-0 rounded-[24px] bg-[#303030] text-white flex justify-center items-center active:scale-90 transition-all">
+            {isActive ? <Square size={24} fill="currentColor" /> : <Play size={28} fill="currentColor" className="translate-x-1" />}
+          </button>
+          <button onClick={onComplete} className="flex-1 h-20 rounded-[24px] bg-[#E8F583] text-[#202020] font-bold text-xl flex justify-center items-center active:scale-95 transition-all shadow-[0_10px_30px_rgba(232,245,131,0.3)]">
+            完成打卡
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// --- Profile & Profile Edit ---
+function ProfileTab({ streak, isAnyCompleted, selectedModeId, onSelectMode, isCustomDaily, setIsCustomDaily, customTaskText, setCustomTaskText, profileData, setProfileData, onOpenCalendar, onEditProfile }) {
+  const hasStreak = streak > 0;
+  const initial = profileData.username ? profileData.username.charAt(0).toUpperCase() : 'U';
+  
+  let fireOuterClass = '';
+  let fireInnerClass = '';
+  
+  if (isAnyCompleted) {
+    fireOuterClass = 'fill-orange-500 drop-shadow-[0_0_15px_rgba(255,165,0,0.8)]';
+    fireInnerClass = 'fill-yellow-300';
+  } else if (hasStreak) {
+    fireOuterClass = 'fill-orange-500 drop-shadow-[0_0_15px_rgba(255,165,0,0.6)] animate-[pulse_2.5s_ease-in-out_infinite] opacity-90';
+    fireInnerClass = 'fill-yellow-300 opacity-90';
+  } else {
+    fireOuterClass = 'fill-[#444444] opacity-50';
+    fireInnerClass = 'fill-[#666666] opacity-50';
+  }
+
+  return (
+    <div className="px-5 pt-14 pb-12 animate-in fade-in duration-500 font-['Microsoft_YaHei',sans-serif]">
+      
+      {/* 头部：头像与用户名 (点击即可编辑) */}
+      <div onClick={onEditProfile} className="flex items-center gap-4 mb-8 cursor-pointer active:scale-95 transition-transform bg-[#1A1A1A] p-4 rounded-[24px] border border-white/5 shadow-md">
+        <div className="w-[64px] h-[64px] rounded-full bg-[#E8F583] flex items-center justify-center text-[#202020] text-3xl font-black font-['DIN_Alternate',sans-serif] relative group shadow-lg shrink-0 overflow-hidden">
+          {initial}
+          <div className="absolute inset-0 bg-black/40 flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity backdrop-blur-[2px]">
+            <Camera size={20} />
+          </div>
+        </div>
+        <div className="flex flex-col flex-1">
+          <div className="text-[22px] font-bold text-white flex items-center gap-2">
+            {profileData.username || '点击设置昵称'}
+            <Edit3 size={16} className="text-[#666]" />
+          </div>
+          <div className="text-[12px] text-[#888] font-medium mt-1 font-['DIN_Alternate',sans-serif] uppercase tracking-wider">Tap to Edit Profile</div>
+        </div>
+      </div>
+      
+      {/* 身体数据卡片 - 全展示无滑动 */}
+      <div className="grid grid-cols-4 gap-2 mb-8">
+        <div className="bg-[#2A2A2A] rounded-2xl p-3 flex flex-col items-center justify-center border border-white/5 shadow-lg min-w-0">
+          <span className="text-[#888] text-[10px] font-bold mb-1 uppercase font-['DIN_Alternate',sans-serif] tracking-wider">Gender</span>
+          <span className="text-white font-bold text-base truncate w-full text-center font-['DIN_Alternate',sans-serif]">{profileData.gender}</span>
+        </div>
+        <div className="bg-[#2A2A2A] rounded-2xl p-3 flex flex-col items-center justify-center border border-white/5 shadow-lg min-w-0">
+          <span className="text-[#888] text-[10px] font-bold mb-1 uppercase font-['DIN_Alternate',sans-serif] tracking-wider">Weight</span>
+          <span className="text-white font-bold text-base font-['DIN_Alternate',sans-serif] truncate w-full text-center">{profileData.weight}<span className="text-[10px] text-[#666] ml-0.5 font-['Microsoft_YaHei']">kg</span></span>
+        </div>
+        <div className="bg-[#2A2A2A] rounded-2xl p-3 flex flex-col items-center justify-center border border-white/5 shadow-lg min-w-0">
+          <span className="text-[#888] text-[10px] font-bold mb-1 uppercase font-['DIN_Alternate',sans-serif] tracking-wider">Height</span>
+          <span className="text-white font-bold text-base font-['DIN_Alternate',sans-serif] truncate w-full text-center">{profileData.height}<span className="text-[10px] text-[#666] ml-0.5 font-['Microsoft_YaHei']">cm</span></span>
+        </div>
+        <div className="bg-[#2A2A2A] rounded-2xl p-3 flex flex-col items-center justify-center border border-white/5 shadow-lg min-w-0">
+          <span className="text-[#888] text-[10px] font-bold mb-1 uppercase font-['DIN_Alternate',sans-serif] tracking-wider">Body Fat</span>
+          <span className="text-white font-bold text-base font-['DIN_Alternate',sans-serif] truncate w-full text-center">{profileData.bodyFat}<span className="text-[10px] text-[#666] ml-0.5 font-['Microsoft_YaHei']">%</span></span>
+        </div>
+      </div>
+
+      <div className="mb-8">
+        <div className="flex items-center gap-2 mb-4">
+          <Target size={20} className="text-[#E8F583]" />
+          <h3 className="text-lg font-bold text-white">今日挑战模式</h3>
+          <span className="text-[10px] text-[#666] font-['DIN_Alternate',sans-serif] tracking-widest mt-1 ml-1">CHALLENGE MODES</span>
+        </div>
+        <div className="flex overflow-x-auto gap-4 snap-x snap-mandatory pb-6 pt-3 -mx-5 px-5 no-scrollbar">
+          {CHALLENGE_MODES.map((mode) => {
+            const isSelected = selectedModeId === mode.id;
+            return (
+              <div key={mode.id} onClick={() => onSelectMode(mode.id)} className={`w-[150px] h-[200px] shrink-0 snap-center rounded-[24px] p-5 shadow-xl transition-all duration-300 cursor-pointer relative overflow-hidden flex flex-col ${isSelected ? 'bg-[#2A2A2A] border-[#E8F583] ring-1 ring-[#E8F583]/50 shadow-[0_0_20px_rgba(232,245,131,0.15)] scale-100' : 'bg-[#222222] border-white/5 scale-[0.96] opacity-60 hover:opacity-100'}`}>
+                {isSelected && <div className="absolute inset-0 bg-gradient-to-br from-[#E8F583]/10 to-transparent animate-[pulse_3s_ease-in-out_infinite] pointer-events-none"></div>}
+                
+                <div className="relative z-10 flex-1 flex flex-col">
+                  <div className="flex justify-between items-start mb-1">
+                    <div className="flex flex-col">
+                      <h4 className={`text-lg font-bold ${isSelected ? 'text-[#E8F583]' : 'text-white'}`}>{mode.name}</h4>
+                      <span className={`text-[10px] font-['DIN_Alternate',sans-serif] tracking-widest uppercase mt-0.5 ${isSelected ? 'text-[#E8F583]/70' : 'text-[#666]'}`}>{mode.en}</span>
+                    </div>
+                    {mode.recommended && <span className="absolute top-0 right-0 text-[9px] bg-[#E8F583] text-[#202020] px-1.5 py-0.5 rounded-md font-bold uppercase">推荐</span>}
+                  </div>
+                  
+                  {mode.id === 'custom' && isSelected ? (
+                     <div className="mb-2 mt-4 w-full">
+                       <input 
+                         type="text" 
+                         value={customTaskText}
+                         onChange={(e) => setCustomTaskText(e.target.value)}
+                         onClick={(e) => e.stopPropagation()}
+                         placeholder="输入专属挑战"
+                         className="w-full bg-[#1A1A1A] border border-[#E8F583]/30 rounded-lg px-2.5 py-3 text-[12px] text-white font-bold outline-none focus:border-[#E8F583] transition-colors shadow-inner"
+                       />
+                     </div>
+                  ) : (
+                     <p className="text-[#888] text-xs mb-2 mt-4 line-clamp-3 leading-relaxed">{mode.desc}</p>
+                  )}
+
+                  <div className="mt-auto flex flex-col gap-2">
+                    {mode.id === 'custom' && isSelected && (
+                      <div onClick={(e) => { e.stopPropagation(); setIsCustomDaily(!isCustomDaily); }} className="flex items-center gap-1.5 text-[10px] text-[#E8F583] bg-[#E8F583]/10 px-2.5 py-1.5 rounded-full cursor-pointer w-max">
+                        <div className={`w-2.5 h-2.5 rounded-sm border ${isCustomDaily ? 'bg-[#E8F583] border-[#E8F583]' : 'border-[#E8F583]'} flex items-center justify-center`}>
+                          {isCustomDaily && <div className="w-1.5 h-1.5 bg-[#202020]"></div>}
+                        </div>
+                        每日重复
+                      </div>
+                    )}
+                    <div className={`flex items-center gap-1.5 text-xs font-medium font-['DIN_Alternate',sans-serif] ${isSelected ? 'text-white' : 'text-[#666]'}`}>
+                      <Clock size={14} /> {mode.time}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      <div onClick={onOpenCalendar} className="bg-[#AD9BF0] rounded-[24px] p-5 relative overflow-hidden mb-8 cursor-pointer active:scale-95 transition-transform shadow-lg group flex flex-col justify-center min-h-[140px]">
+        <div className="z-10 flex flex-col items-start relative top-1">
+          <div className="text-[13px] font-bold tracking-[0.15em] mb-1.5 uppercase font-['DIN_Alternate',sans-serif] text-[#202020]/80">
+            STREAK DAYS
+          </div>
+          <div className="text-[54px] font-bold font-['DIN_Alternate',sans-serif] leading-none tracking-tighter text-[#202020]">
+            {streak}
+          </div>
+        </div>
+        <Flame size={120} strokeWidth={0} className={`absolute -right-6 -bottom-6 fill-[#202020]/10 transition-transform duration-500 group-hover:scale-110 ${fireOuterClass}`} />
+      </div>
+    </div>
+  );
+}
+
+function ProfileEditModal({ data, onSave, onClose }) {
+  const [formData, setFormData] = useState({ ...data });
+
+  return (
+    <div className="absolute inset-0 z-[70] flex flex-col justify-end font-['Microsoft_YaHei',sans-serif]">
+      <div className="absolute inset-0 bg-black/70 backdrop-blur-sm animate-in fade-in" onClick={onClose}></div>
+      <div className="bg-[#202020] rounded-t-[36px] p-6 pb-12 relative z-[50] animate-in slide-in-from-bottom duration-300 shadow-[0_-20px_60px_rgba(0,0,0,0.8)] border-t border-white/10 flex flex-col gap-4">
+        <div className="w-12 h-1.5 bg-white/20 rounded-full mx-auto mb-2"></div>
+        <h3 className="text-2xl font-bold text-white mb-2 px-2 text-center">个人资料</h3>
+        
+        {/* Mock Avatar Upload */}
+        <div className="flex justify-center mb-2">
+          <div className="relative group cursor-pointer">
+            <div className="w-20 h-20 rounded-full bg-[#E8F583] flex items-center justify-center text-4xl font-black text-[#202020] font-['DIN_Alternate',sans-serif] shadow-lg">
+              {formData.username ? formData.username.charAt(0).toUpperCase() : 'U'}
+            </div>
+            <div className="absolute inset-0 bg-black/50 rounded-full flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity backdrop-blur-sm">
+              <Camera size={24} />
+            </div>
+          </div>
+        </div>
+
+        <div className="flex flex-col gap-3">
+          <div className="flex justify-between items-center bg-[#151515] p-4 rounded-2xl border border-white/5">
+            <span className="text-[#888] font-bold">昵称</span>
+            <input 
+              type="text" value={formData.username} onChange={(e) => setFormData({...formData, username: e.target.value})}
+              className="bg-transparent text-white font-bold outline-none text-right flex-1 ml-4 placeholder:text-[#444]"
+              placeholder="请输入昵称"
+            />
+          </div>
+          <div className="flex justify-between items-center bg-[#151515] p-4 rounded-2xl border border-white/5">
+            <span className="text-[#888] font-bold text-sm uppercase tracking-wider font-['DIN_Alternate',sans-serif]">Gender</span>
+            <select 
+              value={formData.gender}
+              onChange={(e) => setFormData({...formData, gender: e.target.value})}
+              className="bg-transparent text-white font-bold outline-none text-right appearance-none font-['DIN_Alternate',sans-serif]"
+            >
+              <option value="Male" className="text-black">Male</option>
+              <option value="Female" className="text-black">Female</option>
+            </select>
+          </div>
+          <div className="flex justify-between items-center bg-[#151515] p-4 rounded-2xl border border-white/5">
+            <span className="text-[#888] font-bold text-sm uppercase tracking-wider font-['DIN_Alternate',sans-serif]">Weight <span className="lowercase text-xs">(kg)</span></span>
+            <input 
+              type="number" value={formData.weight} onChange={(e) => setFormData({...formData, weight: e.target.value})}
+              className="bg-transparent text-white font-bold outline-none text-right w-20 font-['DIN_Alternate',sans-serif]"
+            />
+          </div>
+          <div className="flex justify-between items-center bg-[#151515] p-4 rounded-2xl border border-white/5">
+            <span className="text-[#888] font-bold text-sm uppercase tracking-wider font-['DIN_Alternate',sans-serif]">Height <span className="lowercase text-xs">(cm)</span></span>
+            <input 
+              type="number" value={formData.height} onChange={(e) => setFormData({...formData, height: e.target.value})}
+              className="bg-transparent text-white font-bold outline-none text-right w-20 font-['DIN_Alternate',sans-serif]"
+            />
+          </div>
+          <div className="flex justify-between items-center bg-[#151515] p-4 rounded-2xl border border-white/5">
+            <span className="text-[#888] font-bold text-sm uppercase tracking-wider font-['DIN_Alternate',sans-serif]">Body Fat <span className="lowercase text-xs">(%)</span></span>
+            <input 
+              type="number" value={formData.bodyFat} onChange={(e) => setFormData({...formData, bodyFat: e.target.value})}
+              className="bg-transparent text-white font-bold outline-none text-right w-20 font-['DIN_Alternate',sans-serif]"
+            />
+          </div>
+        </div>
+
+        <button 
+          onClick={() => onSave(formData)}
+          className="w-full h-14 bg-[#E8F583] text-[#202020] rounded-[20px] font-bold text-lg mt-2 shadow-[0_10px_20px_rgba(232,245,131,0.2)] active:scale-95 transition-transform"
+        >
+          保存修改
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// 日历历史浮层
+function CalendarHistoryModal({ onClose, isChallengeCompletedToday, isTrainingCompletedToday, todayTrainings, activeTaskText }) {
+  const [viewDate, setViewDate] = useState(new Date(2026, 6, 1)); 
+  const [selectedDay, setSelectedDay] = useState(18); 
+
+  const year = viewDate.getFullYear();
+  const month = viewDate.getMonth(); 
+  const isCurrentMockMonth = year === 2026 && month === 6;
+
+  const handlePrevMonth = () => {
+    setViewDate(new Date(year, month - 1, 1));
+    setSelectedDay(null); 
+  };
+  
+  const handleNextMonth = () => {
+    setViewDate(new Date(year, month + 1, 1));
+    setSelectedDay(null); 
+  };
+
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const firstDayOfWeek = new Date(year, month, 1).getDay(); 
+
+  const monthData = Array.from({ length: daysInMonth }, (_, i) => {
+    const date = i + 1;
+    let chDone = false;
+    let trDone = false;
+    let details = null;
+
+    if (isCurrentMockMonth) {
+      if (date < 18) {
+         if (date % 3 === 0) { chDone = true; trDone = true; details = { challenge: '进阶模式：15个波比跳 × 2组', training: '力量综合：腿部/背部', exercises: [] }; }
+         else if (date % 3 === 1) { chDone = true; trDone = false; details = { challenge: '新手模式：20个深蹲 × 2组', training: null, exercises: [] }; }
+         else if (date === 16) { 
+            chDone = false; trDone = true; 
+            details = { 
+               challenge: null, 
+               training: '无氧：背部/二头肌',
+               duration: '45:00',
+               exercises: [
+                  { name: '引体向上', unit: '自重', sets: [{weight: 0, reps: 12}, {weight: 0, reps: 10}, {weight: 0, reps: 8}, {weight: 0, reps: 8}] }, 
+                  { name: '杠铃划船', unit: 'kg', sets: [{weight: 50, reps: 12}, {weight: 60, reps: 10}, {weight: 60, reps: 10}, {weight: 70, reps: 8}] }
+               ] 
+            }; 
+         }
+      } else if (date === 18) {
+         chDone = isChallengeCompletedToday;
+         trDone = isTrainingCompletedToday;
+         if (chDone || trDone) {
+           const allExs = todayTrainings.flatMap(t => t.exercises);
+           details = { 
+             challenge: chDone ? (activeTaskText || '今日挑战完成') : null, 
+             training: trDone ? `${todayTrainings.map(t=>t.muscleSummary).join(' + ')}` : null,
+             duration: trDone ? todayTrainings.reduce((acc, curr) => acc + ' & ' + curr.duration, '').slice(3) : null,
+             exercises: allExs 
+           };
+         }
+      }
+    }
+
+    let styleClass = 'bg-[#252525] text-[#666] border border-transparent'; 
+    if (chDone && trDone) {
+      styleClass = 'bg-[#E8F583] text-[#202020] font-bold shadow-[0_0_10px_rgba(232,245,131,0.3)]'; 
+    } else if (chDone || trDone) {
+      styleClass = 'bg-transparent border-2 border-[#E8F583] text-[#E8F583] font-bold'; 
+    }
+
+    const isFuture = isCurrentMockMonth && date > 18;
+    return { date, styleClass, details, isFuture };
+  });
+
+  const selectedData = selectedDay ? monthData.find(d => d.date === selectedDay) : null;
+  const monthNames = ["1月", "2月", "3月", "4月", "5月", "6月", "7月", "8月", "9月", "10月", "11月", "12月"];
+
+  return (
+    <div className="absolute inset-0 z-[80] bg-[#121212] flex flex-col animate-in slide-in-from-bottom duration-300 font-['Microsoft_YaHei',sans-serif]">
+      <div className="px-6 pt-14 pb-4 flex justify-between items-center bg-[#1A1A1A] border-b border-white/5">
+        <button onClick={onClose} className="w-10 h-10 bg-white/5 hover:bg-white/10 rounded-full flex items-center justify-center text-white active:scale-90 transition-all"><X size={20} /></button>
+        <div className="flex items-center gap-4">
+          <button onClick={handlePrevMonth} className="text-[#888] hover:text-white p-1"><ChevronLeft size={20}/></button>
+          <div className="flex flex-col items-center min-w-[80px]">
+            <span className="text-white font-bold tracking-wide font-['DIN_Alternate',sans-serif]">{year} <span className="font-['Microsoft_YaHei']">{monthNames[month]}</span></span>
+            <span className="text-[#888] text-[11px] font-medium tracking-widest uppercase">月度记录</span>
+          </div>
+          <button onClick={handleNextMonth} className="text-[#888] hover:text-white p-1"><ChevronRight size={20}/></button>
+        </div>
+        <div className="w-10"></div>
+      </div>
+
+      <div className="flex-1 overflow-y-auto p-6 flex flex-col">
+        <div className="flex justify-center gap-6 mb-8 text-xs font-bold text-[#888]">
+          <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-sm bg-[#E8F583]"></div>全达成</div>
+          <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-sm border-2 border-[#E8F583]"></div>单项达成</div>
+          <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-sm bg-[#252525]"></div>未打卡</div>
+        </div>
+
+        <div className="grid grid-cols-7 gap-2 mb-3">
+          {['S','M','T','W','T','F','S'].map((day, i) => (
+            <div key={i} className="text-center text-[#666] text-xs font-bold font-['DIN_Alternate',sans-serif]">{day}</div>
+          ))}
+        </div>
+
+        <div className="grid grid-cols-7 gap-2 mb-10">
+          {Array.from({ length: firstDayOfWeek }).map((_, i) => (
+            <div key={`empty-${i}`}></div>
+          ))}
+          {monthData.map((d) => (
+            <div 
+              key={d.date} 
+              onClick={() => !d.isFuture && setSelectedDay(d.date)}
+              className={`aspect-square rounded-full flex items-center justify-center text-sm font-bold font-['DIN_Alternate',sans-serif] transition-all
+                ${d.isFuture ? 'opacity-20 cursor-not-allowed text-[#666] bg-[#1A1A1A]' : 'cursor-pointer active:scale-90 hover:bg-white/10'}
+                ${d.styleClass}
+                ${selectedDay === d.date ? 'ring-2 ring-white ring-offset-2 ring-offset-[#121212]' : ''}
+              `}
+            >
+              {d.date}
+            </div>
+          ))}
+        </div>
+
+        {selectedData && !selectedData.isFuture && (
+          <div className="bg-[#1A1A1A] rounded-[24px] p-5 border border-white/5 shadow-xl animate-in fade-in slide-in-from-bottom-2 mb-8">
+            <h4 className="text-white font-bold text-lg mb-4 border-b border-white/10 pb-3 flex items-center gap-2">
+               <Calendar size={18} className="text-[#E8F583]" /> {monthNames[month]}<span className="font-['DIN_Alternate',sans-serif]">{selectedDay}</span>日 记录
+            </h4>
+            
+            {!selectedData.details ? (
+               <div className="text-[#666] text-sm text-center py-4 font-bold">这一天休息啦，没有留下汗水～</div>
+            ) : (
+               <div className="flex flex-col gap-4">
+                 {selectedData.details.challenge && (
+                   <div className="flex gap-3 items-start mb-2">
+                     <div className="w-8 h-8 rounded-full bg-[#E8F583]/10 flex items-center justify-center shrink-0 mt-0.5"><Target size={14} className="text-[#E8F583]" /></div>
+                     <div>
+                       <div className="text-[#888] text-xs font-bold mb-1">挑战完成</div>
+                       <div className="text-white font-bold text-[14px] leading-snug whitespace-pre-wrap">{selectedData.details.challenge}</div>
+                     </div>
+                   </div>
+                 )}
+                 {selectedData.details.training && (
+                   <div className="flex gap-3 items-start">
+                     <div className="w-8 h-8 rounded-full bg-[#AD9BF0]/10 flex items-center justify-center shrink-0 mt-0.5"><Dumbbell size={14} className="text-[#AD9BF0]" /></div>
+                     <div className="flex-1">
+                       <div className="text-[#888] text-xs font-bold mb-1 flex justify-between">
+                         <span>训练记录</span>
+                         {selectedData.details.duration && <span className="font-['DIN_Alternate',sans-serif] text-[#AD9BF0]">{selectedData.details.duration}</span>}
+                       </div>
+                       <div className="text-white font-bold text-[15px] leading-relaxed mb-3">{selectedData.details.training}</div>
+                       
+                       {/* 详细的组数渲染 */}
+                       {selectedData.details.exercises && selectedData.details.exercises.length > 0 && (
+                          <div className="flex flex-col gap-3 mt-2">
+                            {selectedData.details.exercises.map((ex, i) => (
+                              <div key={i} className="flex flex-col bg-[#151515] p-3 rounded-xl border border-white/5">
+                                <div className="flex justify-between items-center mb-2">
+                                  <span className="text-white font-bold text-[14px]">{ex.name}</span>
+                                  <span className="text-[#888] text-[11px] font-bold bg-[#202020] px-2 py-0.5 rounded-md">
+                                    <span className="font-['DIN_Alternate',sans-serif]">{Array.isArray(ex.sets) ? ex.sets.length : ex.sets}</span> 组
+                                  </span>
+                                </div>
+                                {Array.isArray(ex.sets) && (
+                                  <div className="flex flex-col gap-1.5 mt-1 pt-2 border-t border-white/5">
+                                    {ex.sets.map((s, idx) => (
+                                      <div key={idx} className="flex justify-between text-[12px] text-[#666] font-bold">
+                                        <span>第 <span className="font-['DIN_Alternate',sans-serif] text-[#888]">{idx + 1}</span> 组</span>
+                                        {s.duration ? (
+                                          <span className="font-['DIN_Alternate',sans-serif] text-[#888]">{s.duration} min</span>
+                                        ) : (
+                                          <span className="font-['DIN_Alternate',sans-serif] text-[#888]">{s.weight || 0} {ex.unit || 'kg'} × {s.reps}</span>
+                                        )}
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                       )}
+                     </div>
+                   </div>
+                 )}
+               </div>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// --- Training Flow Drawers & Modals ---
+function TrainingDrawer({ onClose, onSelectType }) {
+  const types = [
+    { id: 'anaerobic', name: '无氧训练', en: 'Anaerobic', icon: <Trophy />, color: 'bg-[#F0C7FF] text-[#202020]' },
+    { id: 'aerobic', name: '有氧训练', en: 'Aerobic', icon: <Activity />, color: 'bg-[#E8F583] text-[#202020]' },
+    { id: 'stretch', name: '拉伸恢复', en: 'Stretch', icon: <User />, color: 'bg-[#AD9BF0] text-[#202020]' }
+  ];
+
+  return (
+    <div className="absolute inset-0 z-[40] flex flex-col justify-end font-['Microsoft_YaHei',sans-serif]">
+      <div className="absolute inset-0 bg-black/70 backdrop-blur-sm animate-in fade-in" onClick={onClose}></div>
+      <div className="bg-[#202020] rounded-t-[36px] p-6 pb-12 relative z-[50] animate-in slide-in-from-bottom duration-300 shadow-[0_-20px_60px_rgba(0,0,0,0.8)] border-t border-white/10">
+        <div className="w-12 h-1.5 bg-white/20 rounded-full mx-auto mb-8"></div>
+        <h3 className="text-2xl font-bold text-white mb-6 tracking-widest text-center font-['DIN_Alternate',sans-serif] uppercase">New Training</h3>
+        <div className="flex flex-col gap-4">
+          {types.map(t => (
+            <button key={t.id} onClick={() => onSelectType(t.id)} className={`w-full p-4 rounded-[24px] flex items-center justify-between transition-transform active:scale-[0.98] shadow-lg ${t.color}`}>
+              <div className="flex items-center gap-4">
+                <div className="w-14 h-14 rounded-full bg-black/10 flex items-center justify-center">{t.icon}</div>
+                <div className="flex flex-col items-start">
+                  <span className="text-lg font-bold tracking-wide">{t.name}</span>
+                  <span className="text-[11px] font-['DIN_Alternate',sans-serif] tracking-widest uppercase opacity-70 mt-0.5">{t.en}</span>
+                </div>
+              </div>
+              <ChevronRight size={24} className="opacity-60 mr-2" />
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// 核心重构：支持组数管理、折叠与智能计数的执行页
+function ActiveTrainingScreen({ type, exercises, setExercises, trainingTime, personalRecords, onCheckPR, onMinimize, onComplete, onAddAction }) {
+  const typeMap = { 'anaerobic': '无氧训练', 'aerobic': '有氧训练', 'stretch': '拉伸恢复' };
+  const typeName = typeMap[type] || '训练';
+  const isCardio = type === 'aerobic' || type === 'stretch';
+
+  const formatTime = (secs) => {
+    const m = Math.floor(secs / 60);
+    const s = secs % 60;
+    return `${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`;
+  };
+
+  const todayStr = new Date().toLocaleDateString('zh-CN', { year: 'numeric', month: 'long', day: 'numeric' });
+
+  let totalVolume = 0;
+  let completedVolume = 0;
+  if (!isCardio) {
+    exercises.forEach(ex => {
+      const ratio = ex.unit === 'lbs' ? 0.453592 : 1;
+      ex.sets.forEach(set => {
+        const vol = (parseFloat(set.weight) || 0) * (parseInt(set.reps) || 0) * ratio;
+        totalVolume += vol;
+        if (set.completed) completedVolume += vol;
+      });
+    });
+  }
+  totalVolume = Math.round(totalVolume * 10) / 10;
+  completedVolume = Math.round(completedVolume * 10) / 10;
+
+  const updateSet = (exIndex, setIndex, field, value) => {
+    const newExs = [...exercises];
+    newExs[exIndex].sets[setIndex][field] = value;
+    setExercises(newExs);
+  };
+
+  const toggleSetComplete = (exIndex, setIndex) => {
+    const newExs = [...exercises];
+    const set = newExs[exIndex].sets[setIndex];
+    set.completed = !set.completed;
+    setExercises(newExs);
+
+    // PR Check Trigger
+    if (set.completed && !isCardio) {
+      const weightVal = parseFloat(set.weight);
+      if (weightVal > 0) {
+        onCheckPR(newExs[exIndex].name, weightVal, newExs[exIndex].unit || 'kg');
+      }
+    }
+  };
+
+  const toggleCollapse = (exIndex) => {
+    const newExs = [...exercises];
+    newExs[exIndex].isCollapsed = !newExs[exIndex].isCollapsed;
+    setExercises(newExs);
+  };
+
+  const toggleUnit = (exIndex) => {
+    const newExs = [...exercises];
+    newExs[exIndex].unit = newExs[exIndex].unit === 'kg' ? 'lbs' : 'kg';
+    setExercises(newExs);
+  };
+
+  const addSet = (exIndex) => {
+    const newExs = [...exercises];
+    const sets = newExs[exIndex].sets;
+    const lastSet = sets[sets.length - 1];
+    
+    if (isCardio) {
+      sets.push({ id: Date.now(), duration: lastSet ? lastSet.duration : 10, completed: false });
+    } else {
+      sets.push({ id: Date.now(), weight: lastSet ? lastSet.weight : '', reps: lastSet ? lastSet.reps : 10, completed: false });
+    }
+    newExs[exIndex].isCollapsed = false;
+    setExercises(newExs);
+  };
+
+  return (
+    <div className="absolute inset-0 z-[40] bg-[#121212] flex flex-col animate-in slide-in-from-bottom duration-300 font-['Microsoft_YaHei',sans-serif]">
+      
+      <div className="px-5 pt-12 pb-4 border-b border-white/5 bg-[#1A1A1A] relative shadow-md">
+        <div className="flex justify-between items-center relative z-10">
+          <button onClick={onMinimize} className="flex items-center gap-1 text-[#E8F583] hover:text-white bg-[#E8F583]/10 px-3 py-2 rounded-full text-sm font-bold transition-colors">
+            <ChevronLeft size={18} /> 返回
+          </button>
+          
+          <div className="flex flex-col items-center absolute left-1/2 -translate-x-1/2 pointer-events-none">
+            <span className="text-[#888] font-medium text-[11px] mb-1"><Calendar size={10} className="inline mr-1 mb-0.5"/>{todayStr} · {typeName}</span>
+            <span className="text-3xl font-mono text-white font-bold tracking-tighter leading-none font-['DIN_Alternate',sans-serif]">{formatTime(trainingTime)}</span>
+          </div>
+          
+          <div className="w-20"></div> 
+        </div>
+        
+        {!isCardio && exercises.length > 0 && (
+          <div className="flex justify-center mt-4">
+            <div className="bg-[#202020] px-4 py-1.5 rounded-full flex gap-2 text-[13px] font-bold border border-white/5 shadow-inner text-[#888]">
+              <Target size={14} className="text-[#E8F583] mt-[2px]" />
+              重量: <span className="text-white font-['DIN_Alternate',sans-serif]">{completedVolume}<span className="text-[11px] font-['Microsoft_YaHei'] ml-1">kg (已完成)</span></span> / <span className="font-['DIN_Alternate',sans-serif]">{totalVolume}<span className="text-[11px] font-['Microsoft_YaHei'] ml-1">kg (总重量)</span></span>
+            </div>
+          </div>
+        )}
+      </div>
+
+      <div className="flex-1 overflow-y-auto p-5 no-scrollbar pb-10">
+        {exercises.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-20 opacity-50">
+            <Dumbbell size={64} className="mb-4" />
+            <div className="text-center font-bold">还没有添加任何动作</div>
+            <div className="text-sm mt-2">点击下方按钮开始组建计划</div>
+          </div>
+        ) : (
+          exercises.map((ex, idx) => (
+            <div key={ex.id} className="bg-[#252525] rounded-[24px] p-5 mb-4 border border-white/5 shadow-xl transition-all">
+              
+              <div 
+                className={`flex justify-between items-center text-white pb-3 font-bold cursor-pointer select-none ${!ex.isCollapsed ? 'border-b border-white/10 mb-4' : ''}`}
+                onClick={() => toggleCollapse(idx)}
+              >
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-[17px]">{ex.name}</span>
+                  {ex.isCustom && <span className="text-[10px] bg-[#E8F583] text-[#202020] px-1.5 py-0.5 rounded-sm shrink-0">自定义</span>}
+                  
+                  {/* PR Display Badge */}
+                  {!isCardio && personalRecords[ex.name] > 0 && (
+                     <span className="text-[#888] text-[10px] font-bold font-['DIN_Alternate',sans-serif] bg-[#333] px-2 py-0.5 rounded-full shrink-0 flex items-center gap-1">
+                       <Trophy size={10} className="text-yellow-500" /> PR: {personalRecords[ex.name]}kg
+                     </span>
+                  )}
+                  
+                  <span className="text-[#888] text-xs font-normal ml-1 font-['DIN_Alternate',sans-serif]">({ex.sets.length}组)</span>
+                </div>
+                
+                <div className="flex items-center gap-3 shrink-0">
+                  {!isCardio && !ex.isCollapsed && (
+                    <button 
+                      onClick={(e) => { e.stopPropagation(); toggleUnit(idx); }} 
+                      className="text-[11px] bg-[#333] px-2 py-1 rounded-md text-[#888] hover:text-white font-bold transition-colors font-['DIN_Alternate',sans-serif]"
+                    >
+                      单位: {ex.unit || 'kg'}
+                    </button>
+                  )}
+                  {ex.isCollapsed ? <ChevronDown size={20} className="text-[#888]"/> : <ChevronUp size={20} className="text-[#888]"/>}
+                </div>
+              </div>
+
+              {!ex.isCollapsed && (
+                <div className="animate-in slide-in-from-top-2 fade-in duration-200">
+                  <div className="flex px-1 mb-2 text-[#888] text-[11px] font-bold">
+                    <div className="w-8 text-center">组</div>
+                    <div className="flex-1 text-center">{isCardio ? '时长 (分)' : `重量 (${ex.unit || 'kg'})`}</div>
+                    {!isCardio && <div className="flex-1 text-center">次数</div>}
+                    <div className="w-12 text-center">打卡</div>
+                  </div>
+
+                  {ex.sets.map((set, sIdx) => (
+                    <div key={set.id} className={`flex items-center gap-2 mb-2 p-1.5 rounded-[16px] transition-all duration-300 ${set.completed ? 'bg-[#303030] opacity-60 grayscale-[0.5]' : 'bg-[#1A1A1A] border border-white/5'}`}>
+                      <div className="w-8 text-center text-[#888] font-bold text-sm font-['DIN_Alternate',sans-serif]">{sIdx + 1}</div>
+                      
+                      {isCardio ? (
+                        <div className="flex-1 bg-[#252525] rounded-xl flex items-center overflow-hidden h-11">
+                          <input 
+                            type="number" 
+                            value={set.duration} 
+                            onChange={e => updateSet(idx, sIdx, 'duration', e.target.value)} 
+                            onFocus={e => e.target.select()}
+                            disabled={set.completed} 
+                            className="w-full bg-transparent text-center text-lg text-white font-mono outline-none font-bold placeholder:text-[#555] font-['DIN_Alternate',sans-serif]" 
+                          />
+                        </div>
+                      ) : (
+                        <>
+                          <div className="flex-1 bg-[#252525] rounded-xl flex items-center overflow-hidden h-11">
+                            <input 
+                              type="number" 
+                              value={set.weight === 0 ? '' : set.weight} 
+                              placeholder="0"
+                              onChange={e => updateSet(idx, sIdx, 'weight', e.target.value)} 
+                              onFocus={e => e.target.select()}
+                              disabled={set.completed} 
+                              className="w-full bg-transparent text-center text-lg text-white font-mono outline-none font-bold placeholder:text-[#555] font-['DIN_Alternate',sans-serif]" 
+                            />
+                          </div>
+                          <div className="flex-1 bg-[#252525] rounded-xl flex items-center overflow-hidden h-11">
+                            <input 
+                              type="number" 
+                              value={set.reps} 
+                              placeholder="10"
+                              onChange={e => updateSet(idx, sIdx, 'reps', e.target.value)} 
+                              onFocus={e => e.target.select()}
+                              disabled={set.completed} 
+                              className="w-full bg-transparent text-center text-lg text-white font-mono outline-none font-bold placeholder:text-[#555] font-['DIN_Alternate',sans-serif]" 
+                            />
+                          </div>
+                        </>
+                      )}
+                      
+                      <button 
+                        onClick={() => toggleSetComplete(idx, sIdx)} 
+                        className={`w-12 h-11 rounded-xl flex items-center justify-center transition-all ${set.completed ? 'bg-[#E8F583] text-[#202020] shadow-[0_0_15px_rgba(232,245,131,0.2)]' : 'bg-[#333] text-[#888] hover:bg-[#404040]'}`}
+                      >
+                        <CheckCircle2 size={20} strokeWidth={set.completed ? 3 : 2} />
+                      </button>
+                    </div>
+                  ))}
+
+                  <button 
+                    onClick={() => addSet(idx)} 
+                    className="w-full mt-3 h-11 rounded-[16px] bg-[#202020] hover:bg-[#303030] border border-dashed border-[#555] text-[#888] hover:text-[#bbb] text-[13px] font-bold flex items-center justify-center gap-1.5 transition-colors"
+                  >
+                    <Plus size={16} /> 加一组
+                  </button>
+                </div>
+              )}
+            </div>
+          ))
+        )}
+        
+        <button onClick={onAddAction} className="w-full h-14 border-2 border-dashed border-[#E8F583]/30 text-[#E8F583] font-bold rounded-[24px] hover:bg-[#E8F583]/10 transition-colors flex items-center justify-center gap-2 mt-2 shrink-0">
+          <Plus size={20} /> 继续添加动作
+        </button>
+      </div>
+
+      <div className="px-5 pb-8 pt-4 bg-gradient-to-t from-[#121212] via-[#121212] to-transparent shrink-0">
+        <button 
+          onClick={() => onComplete({ type: typeName, duration: formatTime(trainingTime), exercises, muscleSummary: getMuscleSummary(exercises, type) })}
+          className="w-full h-16 bg-[#E8F583] text-[#202020] rounded-[20px] font-bold text-xl shadow-[0_10px_30px_rgba(232,245,131,0.2)] active:scale-95 transition-transform"
+        >
+          结束训练
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// 动作选择页
+function ActionSelectionScreen({ type, customExercises, onSaveCustom, onDeleteCustom, onClose, onSelectAction }) {
+  const dbType = STATIC_EXERCISE_DB[type] ? type : 'anaerobic';
+  const muscleGroups = Object.keys(STATIC_EXERCISE_DB[dbType]);
+  
+  const [activeMuscle, setActiveMuscle] = useState(muscleGroups[0]);
+  const equips = getEquipTypes(type);
+  const [activeEquip, setActiveEquip] = useState(equips[0]);
+
+  const [showAddCustomModal, setShowAddCustomModal] = useState(false);
+  const [newCustomName, setNewCustomName] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const staticList = STATIC_EXERCISE_DB[dbType][activeMuscle] || [];
+  const customList = customExercises.filter(e => e.type === type && e.muscle === activeMuscle);
+  const fullList = [...staticList, ...customList];
+
+  let filteredList = activeEquip === '置顶' || activeEquip === '全部' 
+    ? fullList 
+    : fullList.filter(e => e.equip === activeEquip);
+
+  if (searchQuery.trim()) {
+    filteredList = filteredList.filter(e => e.name.toLowerCase().includes(searchQuery.toLowerCase()));
+  }
+
+  const handleCreateCustom = () => {
+    if (!newCustomName.trim()) return;
+    onSaveCustom({ type, muscle: activeMuscle, equip: activeEquip === '置顶' ? '自重' : activeEquip, name: newCustomName });
+    setNewCustomName('');
+    setShowAddCustomModal(false);
+  };
+
+  return (
+    <div className="absolute inset-0 z-[60] bg-[#202020] flex flex-col animate-in slide-in-from-bottom duration-300 font-['Microsoft_YaHei',sans-serif]">
+      
+      <div className="pt-12 pb-4 px-5 flex gap-4 items-center z-10">
+        <button onClick={onClose} className="w-11 h-11 shrink-0 flex items-center justify-center text-white bg-white/5 hover:bg-white/10 rounded-full active:scale-90 transition-all">
+          <ChevronLeft size={24} />
+        </button>
+        <div className="flex-1 bg-[#151515] rounded-full h-11 flex items-center px-5 gap-3 border border-white/5 focus-within:border-[#E8F583]/50 transition-colors shadow-inner">
+          <Search size={18} className="text-[#888]" />
+          <input 
+            type="text" 
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="搜索动作..." 
+            className="bg-transparent border-none outline-none text-white text-[15px] w-full placeholder:text-[#666] font-medium" 
+          />
+          {searchQuery && (
+            <button onClick={() => setSearchQuery('')} className="text-[#666] hover:text-white"><X size={16}/></button>
+          )}
+        </div>
+      </div>
+
+      <div className="flex flex-1 overflow-hidden mt-2">
+        <div className="w-[88px] overflow-y-auto no-scrollbar pb-10 flex flex-col gap-2 px-3 shrink-0">
+          {muscleGroups.map(m => (
+            <div 
+              key={m} 
+              onClick={() => setActiveMuscle(m)} 
+              className={`py-3.5 px-2 text-center text-[13px] font-bold rounded-[16px] transition-all cursor-pointer flex items-center justify-center select-none active:scale-95
+                ${activeMuscle === m 
+                  ? 'bg-[#E8F583] text-[#202020] shadow-[0_5px_15px_rgba(232,245,131,0.2)]' 
+                  : 'text-[#888] hover:bg-white/5 hover:text-white'}`}
+            >
+              {m}
+            </div>
+          ))}
+        </div>
+
+        <div className="flex-1 bg-[#151515] rounded-tl-[40px] flex flex-col overflow-hidden relative shadow-[-5px_0_30px_rgba(0,0,0,0.3)]">
+          {equips.length > 1 && (
+            <div className="flex gap-2.5 p-6 pb-4 overflow-x-auto shrink-0 no-scrollbar">
+              {equips.map(eq => (
+                <button 
+                  key={eq} 
+                  onClick={() => setActiveEquip(eq)} 
+                  className={`px-4 py-2 rounded-full text-[13px] whitespace-nowrap font-bold transition-all active:scale-95
+                    ${activeEquip === eq 
+                      ? 'bg-[#AD9BF0] text-[#202020] shadow-[0_5px_15px_rgba(173,155,240,0.25)]' 
+                      : 'bg-[#252525] text-[#888] hover:text-white hover:bg-[#303030]'}`}
+                >
+                  {eq}
+                </button>
+              ))}
+            </div>
+          )}
+
+          <div className="flex-1 overflow-y-auto p-6 pt-2 no-scrollbar">
+            <div className="flex justify-between items-end mb-4 px-1">
+               <h3 className="text-white font-bold text-lg">{activeEquip === '置顶' || activeEquip === '全部' ? '所有动作' : activeEquip}</h3>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4 pb-24">
+              
+              {/* 动作卡片 */}
+              {filteredList.map((item, idx) => (
+                <div 
+                  key={item.id || idx} 
+                  onClick={() => onSelectAction(item)} 
+                  className="bg-[#222222] rounded-[24px] p-4 relative flex flex-col items-center cursor-pointer active:scale-95 transition-all shadow-lg border border-white/5 hover:border-white/10 group min-h-[140px]"
+                >
+                  {item.isCustom && (
+                    <button 
+                      onClick={(e) => { e.stopPropagation(); onDeleteCustom(item.id); }} 
+                      className="absolute top-2.5 right-2.5 text-[#FF6B6B] bg-[#FF6B6B]/10 p-1.5 rounded-full z-10 opacity-80 hover:opacity-100 transition-opacity"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  )}
+
+                  <div className={`w-14 h-14 rounded-full flex items-center justify-center mb-3 shadow-inner
+                    ${item.isCustom ? 'bg-[#F0C7FF]/10 text-[#F0C7FF]' : 'bg-[#AD9BF0]/10 text-[#AD9BF0]'}`}
+                  >
+                     {type === 'aerobic' ? <Activity size={24} /> : <Dumbbell size={24} />}
+                  </div>
+                  
+                  <span className="text-[14px] font-bold text-white mb-1.5 text-center leading-tight line-clamp-2 px-1">{item.name}</span>
+                  <span className="text-[10px] text-[#888] bg-[#151515] px-2 py-0.5 rounded-md font-medium">{item.equip}</span>
+                </div>
+              ))}
+
+              {/* 【自定义按钮】虚线卡片 */}
+              <div 
+                onClick={() => setShowAddCustomModal(true)} 
+                className="bg-[#202020]/50 border-2 border-dashed border-[#E8F583]/30 rounded-[24px] p-4 flex flex-col items-center justify-center cursor-pointer hover:bg-[#202020] active:scale-95 transition-all min-h-[140px]"
+              >
+                <div className="w-12 h-12 rounded-full bg-[#E8F583]/10 flex items-center justify-center text-[#E8F583] mb-3">
+                  <Plus size={24} strokeWidth={3} />
+                </div>
+                <span className="text-[#E8F583] text-[13px] font-bold tracking-wide">自定义动作</span>
+              </div>
+
+            </div>
+
+            {searchQuery && filteredList.length === 0 && (
+               <div className="text-center text-[#666] py-10 mt-10">
+                 <Search size={32} className="mx-auto mb-3 opacity-20" />
+                 <div className="text-sm font-bold">未搜到相关动作</div>
+               </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {showAddCustomModal && (
+        <div className="absolute inset-0 z-[70] flex items-center justify-center px-6 animate-in fade-in duration-200">
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setShowAddCustomModal(false)}></div>
+          <div className="relative bg-[#202020] w-full rounded-[32px] p-6 shadow-2xl border border-white/5 animate-in zoom-in-95 duration-200">
+             <div className="w-12 h-12 rounded-full bg-[#E8F583]/20 flex items-center justify-center mb-4 text-[#E8F583]">
+                <Edit3 size={24} />
+             </div>
+             <h3 className="text-2xl font-bold text-white mb-1">自定义动作</h3>
+             <p className="mb-6 text-[13px] text-[#888] font-medium">
+               在 <span className="text-[#E8F583] px-1">{activeMuscle}</span> 分类下创建
+             </p>
+             <input 
+               type="text" 
+               value={newCustomName} 
+               onChange={e => setNewCustomName(e.target.value)} 
+               placeholder="输入动作名称" 
+               className="w-full bg-[#151515] border-2 border-white/5 rounded-[20px] px-5 py-4 text-white outline-none focus:border-[#E8F583]/50 transition-colors mb-8 font-bold text-[15px]" 
+               autoFocus
+             />
+             <div className="flex gap-4">
+               <button onClick={() => setShowAddCustomModal(false)} className="flex-1 py-4 bg-[#303030] hover:bg-[#3A3A3A] text-white rounded-[20px] font-bold transition-colors">取消</button>
+               <button onClick={handleCreateCustom} className="flex-1 py-4 bg-[#E8F583] text-[#202020] rounded-[20px] font-bold shadow-[0_10px_20px_rgba(232,245,131,0.2)] hover:scale-105 active:scale-95 transition-all">确认保存</button>
+             </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// 结束总结与导出页
+function EndSummaryScreen({ data, onClose, onExport }) {
+  if (!data) return null;
+
+  return (
+    <div className="absolute inset-0 z-[80] bg-[#121212] flex flex-col items-center justify-center p-6 animate-in slide-in-from-bottom duration-300 font-['Microsoft_YaHei',sans-serif] overflow-y-auto">
+      <div className="w-full max-w-sm bg-[#202020] rounded-[32px] p-6 shadow-2xl border border-[#333] relative flex flex-col items-center my-10">
+        <div className="w-16 h-16 rounded-full bg-[#E8F583] flex items-center justify-center mb-4 shadow-[0_0_30px_rgba(232,245,131,0.3)]">
+          <Trophy size={32} className="text-[#202020]" />
+        </div>
+        <h2 className="text-2xl font-bold text-white mb-1">训练完成！</h2>
+        <p className="text-[#888] font-medium mb-6 text-sm">伟大的付出，必有回响。</p>
+        
+        <div className="w-full bg-[#1A1A1A] rounded-[24px] p-5 mb-6 border border-white/5">
+          <div className="flex justify-between items-center mb-4 pb-4 border-b border-white/5">
+            <span className="text-[#888] font-bold">训练总结</span>
+            <span className="text-white font-bold">{data.muscleSummary}</span>
+          </div>
+          <div className="flex justify-between items-center mb-4 pb-4 border-b border-white/5">
+            <span className="text-[#888] font-bold">训练时长</span>
+            <span className="text-white font-mono font-bold text-lg font-['DIN_Alternate',sans-serif]">{data.duration}</span>
+          </div>
+          
+          <div className="flex flex-col items-start mt-2">
+            <span className="text-[#888] font-bold mb-3">动作记录明细</span>
+            <div className="w-full flex flex-col gap-3">
+               {data.exercises.length > 0 ? data.exercises.map((ex, i) => (
+                 <div key={i} className="flex flex-col bg-[#151515] p-3 rounded-xl border border-white/5">
+                   <div className="flex justify-between items-center mb-2">
+                     <span className="text-white font-bold text-[14px]">{ex.name}</span>
+                     <span className="text-[#888] text-[11px] font-bold bg-[#202020] px-2 py-0.5 rounded-md">
+                       <span className="font-['DIN_Alternate',sans-serif]">{Array.isArray(ex.sets) ? ex.sets.length : ex.sets}</span> 组
+                     </span>
+                   </div>
+                   {Array.isArray(ex.sets) && (
+                     <div className="flex flex-col gap-1.5 mt-1 pt-2 border-t border-white/5">
+                       {ex.sets.map((s, idx) => (
+                         <div key={idx} className="flex justify-between text-[12px] text-[#666] font-bold">
+                           <span>第 <span className="font-['DIN_Alternate',sans-serif] text-[#888]">{idx + 1}</span> 组</span>
+                           {s.duration ? (
+                             <span className="font-['DIN_Alternate',sans-serif] text-[#888]">{s.duration} min</span>
+                           ) : (
+                             <span className="font-['DIN_Alternate',sans-serif] text-[#888]">{s.weight || 0} {ex.unit || 'kg'} × {s.reps}</span>
+                           )}
+                         </div>
+                       ))}
+                     </div>
+                   )}
+                 </div>
+               )) : <span className="text-white font-medium text-sm">无具体动作</span>}
+            </div>
+          </div>
+        </div>
+
+        <div className="w-full flex flex-col gap-3">
+          <button onClick={onExport} className="w-full py-3.5 bg-[#303030] text-white rounded-2xl font-bold flex items-center justify-center gap-2 hover:bg-[#404040]">
+            <Share size={18} /> 导出训练数据
+          </button>
+          <button onClick={onClose} className="w-full py-3.5 bg-[#E8F583] text-[#202020] rounded-2xl font-bold shadow-lg">
+            返回首页
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// 历史训练记录弹窗
+function HistoryModal({ data, onClose }) {
+  if (!data) return null;
+  return (
+    <div className="absolute inset-0 z-[80] bg-[#121212]/80 backdrop-blur-sm flex items-center justify-center p-6 animate-in fade-in duration-200 font-['Microsoft_YaHei',sans-serif]" onClick={onClose}>
+      <div className="w-full max-w-sm bg-[#202020] rounded-[32px] p-6 shadow-2xl border border-white/5 relative flex flex-col animate-in zoom-in-95 max-h-[85vh]" onClick={e => e.stopPropagation()}>
+        <div className="flex justify-between items-center mb-6">
+          <h3 className="text-xl font-bold text-white">7月<span className="font-['DIN_Alternate',sans-serif]">{data.date}</span>日 训练记录</h3>
+          <button onClick={onClose} className="w-8 h-8 bg-white/5 rounded-full flex items-center justify-center text-[#888] hover:text-white transition-colors"><X size={16}/></button>
+        </div>
+        
+        <div className="flex gap-2 mb-6">
+          <span className="text-[#E8F583] text-sm font-bold bg-[#E8F583]/10 px-3 py-1.5 rounded-xl flex items-center gap-1"><Target size={14}/> {data.summary}</span>
+          <span className="text-[#888] text-sm font-bold bg-white/5 px-3 py-1.5 rounded-xl flex items-center gap-1 font-['DIN_Alternate',sans-serif]"><Clock size={14}/> {data.duration}</span>
+        </div>
+        
+        <div className="flex flex-col gap-3 overflow-y-auto no-scrollbar pb-4 flex-1">
+          <div className="text-xs font-bold text-[#666] mb-1 px-1">动作明细</div>
+          {data.exercises && data.exercises.map((ex, i) => (
+            <div key={i} className="flex flex-col bg-[#151515] p-4 rounded-2xl border border-white/5">
+              <div className="flex justify-between items-center mb-2">
+                <span className="text-white font-bold text-[15px]">{ex.name}</span>
+                <span className="text-[#888] text-sm font-bold bg-[#202020] px-3 py-1 rounded-lg">
+                  <span className="font-['DIN_Alternate',sans-serif]">{Array.isArray(ex.sets) ? ex.sets.length : ex.sets}</span> 组
+                </span>
+              </div>
+              {Array.isArray(ex.sets) && (
+                <div className="flex flex-col gap-1.5 mt-2 pt-2 border-t border-white/5">
+                  {ex.sets.map((s, idx) => (
+                    <div key={idx} className="flex justify-between text-[13px] text-[#888] font-bold">
+                      <span>第 <span className="font-['DIN_Alternate',sans-serif] text-[#aaa]">{idx + 1}</span> 组</span>
+                      {s.duration ? (
+                        <span className="font-['DIN_Alternate',sans-serif] text-[#aaa]">{s.duration} min</span>
+                      ) : (
+                        <span className="font-['DIN_Alternate',sans-serif] text-[#aaa]">{s.weight || 0} {ex.unit || 'kg'} × {s.reps}</span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}

@@ -1,0 +1,2264 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>品诺筑家 - 提案工作台</title>
+    <meta name="x-build" content="v20260325-1">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/localforage@1.10.0/dist/localforage.min.js"></script>
+    <!-- 引入腾讯云开发 CloudBase JS SDK -->
+    <script src="https://imgcache.qq.com/qcloud/cloudbase-js-sdk/2.8.0/cloudbase.full.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;900&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+        /* === 员工码登录系统 === */
+        #auth-overlay {
+            position: fixed; inset: 0; z-index: 100000;
+            background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(20px);
+            display: none; align-items: center; justify-content: center;
+            opacity: 1; transition: opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        #auth-overlay.hidden-auth {
+            opacity: 0; pointer-events: none;
+        }
+        .auth-card {
+            background: white; padding: 3rem; border-radius: 24px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.08); width: 100%; max-w-sm;
+            text-align: center; transform: translateY(0);
+            transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+            border: 1px solid rgba(0,0,0,0.05);
+        }
+        #auth-overlay.hidden-auth .auth-card {
+            transform: translateY(20px);
+        }
+        .auth-input {
+            width: 100%; padding: 1rem 1.5rem; font-size: 1.1rem;
+            border: 2px solid #eee; border-radius: 12px; margin-bottom: 1.5rem;
+            text-align: center; letter-spacing: 2px; text-transform: uppercase;
+            transition: all 0.3s; background: #fafafa; outline: none;
+        }
+        .auth-input:focus {
+            border-color: #c4a77d; background: white; box-shadow: 0 0 0 4px rgba(196, 167, 125, 0.1);
+        }
+        .auth-btn {
+            width: 100%; padding: 1rem; background: #c4a77d; color: white;
+            border-radius: 12px; font-weight: bold; font-size: 1rem;
+            cursor: pointer; transition: all 0.3s;
+        }
+        .auth-btn:hover { background: #b0956e; transform: translateY(-2px); box-shadow: 0 4px 12px rgba(196, 167, 125, 0.3); }
+        .auth-btn:active { transform: translateY(0); }
+        .auth-error { color: #ef4444; font-size: 0.875rem; margin-top: -1rem; margin-bottom: 1rem; height: 20px; opacity: 0; transition: opacity 0.3s; }
+        .auth-error.show { opacity: 1; }
+
+        :root {
+            --bg-color: #f8f9fa;
+            --text-main: #1a1a1a;
+            --accent: #c4a77d;
+        }
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            overflow-x: hidden;
+            transition: background-color 0.5s ease;
+        }
+        .serif { font-family: 'Noto Serif SC', serif; }
+        
+        /* === 状态管理 (编辑态/演示态) === */
+        body.is-editing .editable { transition: all 0.2s; border-radius: 4px; }
+        body.is-editing .editable:hover { outline: 1px dashed #3b82f6; background: rgba(59, 130, 246, 0.05); cursor: text; }
+        body.is-editing .editable:focus { outline: 2px solid #3b82f6; background: #fff; }
+        
+        body.is-editing .color-circle { cursor: pointer; }
+        body.is-editing .color-circle:hover { outline: 2px dashed #3b82f6; outline-offset: 4px; }
+        
+        body.is-editing .presentation-only-hide { display: flex; }
+        body.is-editing .presentation-only-hide-block { display: block; }
+        body.is-editing .module-controls { display: flex; }
+        
+        body:not(.is-editing) .editable { outline: none !important; }
+        body:not(.is-editing) .presentation-only-hide { display: none !important; }
+        body:not(.is-editing) .presentation-only-hide-block { display: none !important; }
+        body:not(.is-editing) .module-controls { display: none !important; }
+        body:not(.is-editing) { background-color: #fff; }
+        
+        /* === 模块通用 === */
+        .module-card { 
+            position: relative; transition: all 0.2s ease; 
+            padding: 24px; margin: -24px; border-radius: 16px; border: 1px solid transparent; 
+        }
+        body.is-editing .module-card:hover { 
+            background: #fff; border-color: #f3f4f6; box-shadow: 0 10px 30px -5px rgba(0,0,0,0.05); 
+        }
+        
+        .module-controls {
+            position: absolute; top: 16px; right: 16px;
+            display: none; gap: 6px; z-index: 10;
+        }
+        body.is-editing .module-card:hover .module-controls { display: flex; }
+        
+        .drag-handle { 
+            cursor: grab; color: #cbd5e1; padding: 6px; display: flex; align-items: center; justify-content: center;
+            transition: color 0.2s;
+        }
+        .drag-handle:hover { color: #9ca3af; }
+        .drag-handle:active { cursor: grabbing; }
+
+        .icon-btn {
+            width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;
+            border-radius: 8px; background: #f8f9fa; color: #6b7280; cursor: pointer; transition: all 0.2s;
+            font-size: 14px; border: 1px solid #f1f5f9;
+        }
+        .icon-btn:hover { background: #fff; color: #111827; border-color: #e2e8f0; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        .icon-btn.delete:hover { background: #fef2f2; color: #ef4444; border-color: #fee2e2; }
+        
+        .sortable-ghost { opacity: 0.3; background: #f8f9fa; border-radius: 16px; }
+
+        /* === 轮播图与图片标注 === */
+        .img-container {
+            position: relative; border-radius: 8px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.08); transition: all 0.5s ease;
+            width: 100%; height: 100%; overflow: hidden;
+            background: #f1f5f9;
+        }
+        body.is-editing .img-container.has-image { cursor: crosshair; }
+        
+        .carousel-arrow {
+            position: absolute; top: 50%; transform: translateY(-50%);
+            width: 40px; height: 40px; background: rgba(255,255,255,0.8); backdrop-filter: blur(4px);
+            border-radius: 50%; display: flex; align-items: center; justify-content: center;
+            cursor: pointer; z-index: 30; opacity: 0; transition: opacity 0.3s, background 0.2s;
+            color: #333; box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        .img-container:hover .carousel-arrow { opacity: 1; }
+        .carousel-arrow:hover { background: #fff; }
+        .carousel-arrow.left { left: 20px; }
+        .carousel-arrow.right { right: 20px; }
+        
+        /* 底部毛玻璃缩略图导航 */
+        .thumbnail-nav-wrapper {
+            position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
+            background: rgba(255,255,255,0.2); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+            padding: 8px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.3);
+            display: flex; gap: 8px; z-index: 30;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            max-width: 80%; overflow-x: auto;
+        }
+        
+        /* 隐藏缩略图容器的原生滚动条 */
+        .thumbnail-nav-wrapper::-webkit-scrollbar { display: none !important; }
+        .thumbnail-nav-wrapper { -ms-overflow-style: none; scrollbar-width: none; }
+        
+        .thumbnail-item {
+            width: 48px; height: 48px; border-radius: 6px; overflow: hidden;
+            cursor: pointer; opacity: 0.6; transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            border: 2px solid transparent; flex-shrink: 0;
+            background: #e2e8f0;
+        }
+        
+        .thumbnail-item:hover {
+            opacity: 0.8; transform: translateY(-2px);
+        }
+        
+        .thumbnail-item.active {
+            opacity: 1; border-color: #c4a77d; box-shadow: 0 4px 12px rgba(196,167,125,0.4);
+            transform: scale(1.05);
+        }
+        
+        .thumbnail-item img {
+            width: 100%; height: 100%; object-fit: cover;
+        }
+
+        /* 标注点 */
+        .pin {
+            position: absolute; width: 24px; height: 24px; background: transparent;
+            border-radius: 50%;
+            transform: translate(-50%, -50%); z-index: 20; transition: opacity 0.3s;
+        }
+        .pin::after {
+            content: ''; position: absolute; top: 50%; left: 50%;
+            width: 12px; height: 12px; transform: translate(-50%, -50%);
+            border-radius: 50%; background: #c4a77d; opacity: 1; border: 2px solid white; box-shadow: 0 0 10px rgba(0,0,0,0.2);
+        }
+        .pin::before {
+            content: ''; position: absolute; top: 50%; left: 50%;
+            width: 100%; height: 100%; transform: translate(-50%, -50%);
+            border-radius: 50%; background: #c4a77d; opacity: 0.4; animation: pulse 2s infinite; pointer-events: none;
+        }
+        @keyframes pulse { 0% { transform: translate(-50%, -50%) scale(0.5); opacity: 0.6; } 100% { transform: translate(-50%, -50%) scale(2.5); opacity: 0; } }
+        
+        body.is-editing .pin { cursor: grab; }
+        body.is-editing .pin:active { cursor: grabbing; }
+        
+        .pin-line {
+            position: absolute; bottom: 100%; left: 50%; width: 1px; height: 40px;
+            background: var(--text-main); transform-origin: bottom; opacity: 0; transition: all 0.4s;
+        }
+        .pin-card {
+            position: absolute; bottom: calc(100% + 40px); left: 50%;
+            transform: translateX(-50%) translateY(10px); background: rgba(255,255,255,0.95);
+            backdrop-filter: blur(8px); padding: 6px 12px; border-radius: 4px;
+            font-size: 13px; font-weight: 500; white-space: nowrap;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1); opacity: 0; border: 1px solid rgba(0,0,0,0.05);
+            transition: all 0.4s; pointer-events: none;
+            display: flex; align-items: center; gap: 8px; cursor: default;
+        }
+        body.is-editing .pin-card { pointer-events: auto; }
+        body:not(.is-editing) .pin-card { pointer-events: auto; cursor: pointer; }
+        .show-pins .pin-line, .show-pins .pin-card { opacity: 1; transform: translateX(-50%) translateY(0); }
+        
+        .pin-delete {
+            width: 16px; height: 16px;
+            background: #ef4444; color: white; border-radius: 50%; display: flex;
+            align-items: center; justify-content: center; font-size: 10px; cursor: pointer;
+            opacity: 0; transition: opacity 0.2s; flex-shrink: 0; pointer-events: auto;
+        }
+        body.is-editing .pin-card:hover .pin-delete { opacity: 1; }
+        body:not(.is-editing) .pin-delete { display: none !important; }
+
+        input[type="color"] { opacity: 0; position: absolute; width: 0; height: 0; }
+
+        /* Switch Toggle */
+        .toggle-switch { position: relative; display: inline-block; width: 44px; height: 24px; }
+        .toggle-switch input { opacity: 0; width: 0; height: 0; }
+        .slider {
+            position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
+            background-color: #cbd5e1; transition: .4s; border-radius: 24px;
+        }
+        .slider:before {
+            position: absolute; content: ""; height: 18px; width: 18px;
+            left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%;
+        }
+        input:checked + .slider { background-color: #c4a77d; }
+        input:checked + .slider:before { transform: translateX(20px); }
+
+        .exporting .hide-on-export { display: none !important; }
+        .exporting .sticky { position: relative !important; top: 0 !important; }
+        .exporting { background: white; }
+
+        /* 隐藏所有原生滚动条 */
+        ::-webkit-scrollbar { display: none !important; }
+        * { -ms-overflow-style: none !important; scrollbar-width: none !important; }
+        
+        /* === 左右分屏拖拽条 === */
+        .resizer {
+            width: 8px;
+            cursor: col-resize;
+            background-color: transparent;
+            transition: background-color 0.2s;
+            flex-shrink: 0;
+            z-index: 10;
+        }
+        body.is-editing .resizer:hover, .resizer.resizing {
+            background-color: rgba(196, 167, 125, 0.3); /* 卡其色半透明 */
+        }
+        body:not(.is-editing) .resizer { display: none; }
+
+        /* === 互动聚焦模式 (Focus Layout) === */
+        body:not(.layout-focus) #pin-detail-panel {
+            display: none !important;
+        }
+        body.layout-focus #pin-detail-panel {
+            display: flex;
+            width: 0;
+            opacity: 0;
+            overflow: hidden;
+            margin-left: 0;
+            border-width: 0;
+            transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+            transform: translateX(50px);
+        }
+        body.layout-focus.has-active-pin #pin-detail-panel {
+            width: 100%;
+            opacity: 1;
+            border-width: 1px;
+            transform: translateX(0);
+        }
+        @media (min-width: 1024px) {
+            body.layout-focus.has-active-pin #pin-detail-panel {
+                width: 25%; /* 占画面的1/4，左侧效果图自然占3/4 */
+                margin-left: 2rem;
+            }
+        }
+        body.layout-focus #right-panel {
+            transition: width 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        
+        .pin.active-pin {
+            border-color: #c4a77d;
+            box-shadow: 0 0 0 4px rgba(196, 167, 125, 0.3);
+            transform: translate(-50%, -50%) scale(1.25);
+            z-index: 40;
+        }
+        .pin.active-pin::after {
+            animation: none;
+            opacity: 0;
+        }
+
+        /* === 优雅的 Toast 提示 === */
+        #toast-container {
+            position: fixed;
+            top: 5rem;
+            right: 1.5rem;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            pointer-events: none;
+        }
+        
+        .toast-message {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(12px);
+            border-left: 4px solid #c4a77d;
+            box-shadow: 0 10px 30px -5px rgba(0,0,0,0.1);
+            padding: 1rem 1.5rem;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            transform: translateX(120%);
+            opacity: 0;
+            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        
+        .toast-message.show {
+            transform: translateX(0);
+            opacity: 1;
+        }
+        
+        .toast-icon {
+            color: #c4a77d;
+            flex-shrink: 0;
+        }
+    </style>
+</head>
+<body class="antialiased min-h-screen flex-col is-editing" style="display: none;">
+
+    <!-- ==================== 优雅的 Toast 容器 ==================== -->
+    <div id="toast-container"></div>
+
+    <!-- ==================== 员工暗号登录遮罩 ==================== -->
+    <div id="auth-overlay">
+        <div class="auth-card max-w-[360px]">
+            <div class="mb-8">
+                <h1 class="text-2xl serif font-bold text-gray-900 mb-2">品诺筑家</h1>
+                <p class="text-sm text-gray-500 tracking-widest uppercase">提案工作台</p>
+            </div>
+            
+            <input type="text" id="auth-code-input" class="auth-input" placeholder="输入内部员工码" onkeypress="if(event.key==='Enter') verifyAuthCode()">
+            <div id="auth-error-msg" class="auth-error">员工码无效，请重新输入</div>
+            
+            <button class="auth-btn" onclick="verifyAuthCode()">进入工作台</button>
+        </div>
+    </div>
+
+    <!-- ==================== 顶部全局导航栏 ==================== -->
+    <nav class="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-gray-100 hide-on-export">
+        <div class="max-w-[1600px] mx-auto px-4 md:px-6 h-16 flex items-center justify-between">
+            
+            <!-- Logo & 项目管理 & 空间管理 (Tabs) -->
+            <div class="flex items-center gap-4 md:gap-6 flex-1 min-w-0">
+                <!-- Logo -->
+                <div class="flex items-center gap-2 flex-shrink-0 hidden sm:flex cursor-pointer hover:opacity-80 transition-opacity" onclick="openAccountModal()" title="点击查看/切换员工账号">
+                    <div class="w-8 h-8 bg-gray-900 rounded-full flex items-center justify-center text-white font-bold serif text-sm">品</div>
+                    <div class="flex flex-col">
+                        <div class="font-bold text-[13px] leading-tight">品诺筑家</div>
+                        <div class="text-[9px] text-gray-500 leading-tight">高端私宅定制设计</div>
+                    </div>
+                </div>
+                
+                <div class="w-px h-6 bg-gray-200 presentation-only-hide hidden sm:block"></div>
+
+                <!-- 项目切换 -->
+                <div class="relative group/proj z-[100] presentation-only-hide flex-shrink-0">
+                    <div class="flex items-center gap-2 cursor-pointer hover:bg-gray-100 px-2 md:px-3 py-1.5 rounded-md transition-colors border border-transparent group-hover/proj:border-gray-200 group-hover/proj:bg-white group-hover/proj:shadow-sm">
+                        <div class="flex flex-col">
+                            <span id="current-project-name" class="font-bold text-xs md:text-sm text-gray-800 leading-tight truncate max-w-[100px] md:max-w-[150px]">默认方案</span>
+                            <span id="current-project-client" class="text-[10px] text-gray-500 leading-tight truncate max-w-[100px] md:max-w-[150px]">未设置业主</span>
+                        </div>
+                        <svg class="w-4 h-4 text-gray-400 hidden md:block" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                    </div>
+                    <div class="absolute top-full left-0 mt-1 w-64 bg-white border border-gray-100 shadow-xl rounded-lg hidden group-hover/proj:block py-1 z-[110]">
+                        <div class="px-3 py-2 text-xs font-bold text-gray-400 uppercase tracking-wider border-b border-gray-50 mb-1 flex justify-between items-center">
+                            <span>切换方案</span>
+                            <button class="text-[#c4a77d] hover:text-[#b09368] normal-case tracking-normal font-medium flex items-center gap-1" onclick="openProjectSettingsModal()">
+                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                                当前设置
+                            </button>
+                        </div>
+                        <div id="project-list" class="max-h-[300px] overflow-y-auto"></div>
+                        <div class="border-t border-gray-50 mt-1 pt-1">
+                            <div class="px-3 py-2 text-sm text-gray-600 hover:bg-gray-50 cursor-pointer flex items-center gap-2 transition-colors" onclick="createNewProject()">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                                新建提案方案
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="w-px h-6 bg-gray-200"></div>
+
+                <!-- 空间 Tabs -->
+                <div class="flex items-center gap-2 overflow-x-auto overflow-y-hidden no-scrollbar flex-1 whitespace-nowrap h-10 items-center scroll-smooth min-w-0" id="top-space-tabs" onwheel="if(event.deltaY !== 0) { event.preventDefault(); this.scrollLeft += event.deltaY; }">
+                    <!-- JS 渲染 -->
+                </div>
+            </div>
+            
+            <!-- 布局切换开关 -->
+            <div class="flex items-center gap-4 md:gap-6 flex-shrink-0 pl-2 md:pl-6">
+                <!-- 保存到云端按钮 -->
+                <button id="cloud-save-btn" class="presentation-only-hide hidden md:flex items-center gap-2 bg-[#c4a77d] text-white px-4 py-1.5 rounded-full text-xs font-medium hover:bg-[#b0956e] transition-colors" onclick="handleCloudSave()">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
+                    <span>保存</span>
+                </button>
+
+                <!-- 标注开关 -->
+                <div class="flex items-center gap-1 md:gap-2">
+                    <span class="text-xs font-medium text-gray-600 whitespace-nowrap">细节解读</span>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="pins-toggle" checked>
+                        <span class="slider"></span>
+                    </label>
+                </div>
+
+                <!-- 布局切换开关 -->
+                <div class="flex items-center gap-2 md:gap-3 bg-gray-50 px-2 md:px-4 py-1.5 rounded-full border border-gray-200">
+                    <span class="text-xs font-medium text-[#c4a77d] whitespace-nowrap cursor-pointer hover:opacity-80" id="layout-label-editorial">标准</span>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="layout-toggle">
+                        <span class="slider"></span>
+                    </label>
+                    <span class="text-xs font-medium text-gray-500 whitespace-nowrap cursor-pointer hover:opacity-80" id="layout-label-focus">沉浸</span>
+                </div>
+
+                <!-- 状态切换开关 -->
+                <div class="flex items-center gap-2 md:gap-3 bg-gray-50 px-2 md:px-4 py-1.5 rounded-full border border-gray-200">
+                    <span class="text-xs font-medium text-gray-900 whitespace-nowrap cursor-pointer hover:opacity-80" id="mode-label-edit">工作台</span>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="mode-toggle">
+                        <span class="slider"></span>
+                    </label>
+                    <span class="text-xs font-medium text-gray-500 whitespace-nowrap cursor-pointer hover:opacity-80" id="mode-label-pres">沉浸提案</span>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- ==================== 主工作台 (左右分栏) ==================== -->
+    <main id="presentation-board" class="flex-1 w-full max-w-[1600px] mx-auto px-4 md:px-6 py-6 md:py-10 flex flex-col lg:flex-row gap-4 md:gap-8 show-pins items-start">
+        
+        <!-- 左侧：4大专业排版模块 -->
+        <div id="left-panel" class="w-full lg:w-[40%] flex flex-col gap-8 md:gap-10 pb-16 md:pb-32 relative" style="min-width: 300px;">
+            
+            <!-- 空间大标题 -->
+            <header>
+                <h1 id="room-title" class="text-2xl md:text-3xl serif font-bold text-gray-900 mb-2 md:mb-3 tracking-wide editable" contenteditable="true" placeholder="输入空间名称...">客厅 LIVING ROOM</h1>
+                <p id="room-subtitle" class="text-gray-500 text-xs md:text-sm font-medium editable" contenteditable="true" placeholder="输入一句话空间主旨...">现代极简与法式轻奢的碰撞</p>
+            </header>
+
+            <!-- 可拖拽模块容器 -->
+            <div id="sortable-modules" class="flex flex-col gap-12 min-h-[400px]">
+                
+                <!-- 模块 1：空间定调与设计理念 -->
+                <div class="module-card" id="mod-mood">
+                    <div class="module-controls">
+                        <div class="icon-btn drag-handle" title="拖拽排序"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8h16M4 16h16"></path></svg></div>
+                        <div class="icon-btn delete" onclick="removeCoreModule('mod-mood')" title="删除模块">✕</div>
+                    </div>
+                    <h2 class="text-xs font-bold tracking-[0.2em] text-gray-400 mb-6 uppercase border-b pb-4 editable" contenteditable="true">空间定调与设计理念 Concept</h2>
+                    <div id="text-mood" class="serif text-gray-800 leading-relaxed text-sm text-justify editable min-h-[60px] empty:before:content-[attr(placeholder)] empty:before:text-gray-400 whitespace-pre-wrap" contenteditable="true" placeholder="【设计理念】...&#10;【功能美学】...">【设计理念】空间主打轻复古与现代简约的融合调性，以温润质感与舒适实用为核心。
+【功能美学】通过隐匿式的收纳系统，将储物功能完美消隐于极简的立面之中，兼顾视觉纯净与日常起居的机能性。</div>
+                </div>
+
+                <!-- 模块 2：色彩搭配与核心材质 -->
+                <div class="module-card" id="mod-palette">
+                    <div class="module-controls">
+                        <div class="icon-btn drag-handle" title="拖拽排序"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8h16M4 16h16"></path></svg></div>
+                        <div class="icon-btn delete" onclick="removeCoreModule('mod-palette')" title="删除模块">✕</div>
+                    </div>
+                    <h2 class="text-xs font-bold tracking-[0.2em] text-gray-400 mb-6 uppercase border-b pb-4 editable" contenteditable="true">色彩搭配与核心材质 Material</h2>
+                    
+                    <div class="mb-6">
+                        <div id="text-color-desc" class="serif text-gray-800 leading-relaxed text-sm mb-4 text-justify editable min-h-[40px] empty:before:content-[attr(placeholder)] empty:before:text-gray-400 whitespace-pre-wrap" contenteditable="true" placeholder="【基础色 70%】：...&#10;【主题色 20%】：...&#10;【点缀色 10%】：...">【基础色 70%】：大面积的珍珠白与微水泥灰，奠定空间纯净、包容的旷达基调。
+【主题色 20%】：大件胡桃木家具与深色布艺，在轻盈中压住阵脚，注入自然温润的呼吸感。
+【点缀色 10%】：跳脱的赭石色抱枕与黄铜灯饰，作为空间的灵动之笔，瞬间点亮空间的艺术张力。</div>
+                        <div class="flex flex-wrap gap-6 min-h-[80px]" id="color-palette"></div>
+                        <div class="presentation-only-hide mt-4 text-xs text-[#c4a77d] cursor-pointer hover:underline inline-block" onclick="addEmptyColor()">+ 添加主题色卡</div>
+                    </div>
+                    
+                    <div class="border-t border-gray-100 pt-6">
+                        <div class="flex flex-col gap-6 min-h-[60px]" id="materials-list-container"></div>
+                        <div class="presentation-only-hide mt-4 text-xs text-[#c4a77d] cursor-pointer hover:underline inline-block" onclick="addEmptyMaterial()">+ 添加核心材质</div>
+                    </div>
+                </div>
+
+                <!-- 模块 3：灯光与氛围营造 -->
+                <div class="module-card" id="mod-lighting">
+                    <div class="module-controls">
+                        <div class="icon-btn drag-handle" title="拖拽排序"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8h16M4 16h16"></path></svg></div>
+                        <div class="icon-btn delete" onclick="removeCoreModule('mod-lighting')" title="删除模块">✕</div>
+                    </div>
+                    <h2 class="text-xs font-bold tracking-[0.2em] text-gray-400 mb-6 uppercase border-b pb-4 editable" contenteditable="true">灯光与氛围营造 Lighting</h2>
+                    <div id="text-lighting" class="serif text-gray-800 leading-relaxed text-sm text-justify editable min-h-[60px] empty:before:content-[attr(placeholder)] empty:before:text-gray-400 whitespace-pre-wrap" contenteditable="true" placeholder="【光影策略】...">【光影策略】采用无主灯设计与见光不见灯的悬浮光影，以 3000K 暖光勾勒空间轮廓，为极简材质注入归家的温润包裹感。</div>
+                </div>
+
+                <!-- 模块 4：设计亮点与细节考量 -->
+                <div class="module-card" id="mod-details">
+                    <div class="module-controls">
+                        <div class="icon-btn drag-handle" title="拖拽排序"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8h16M4 16h16"></path></svg></div>
+                        <div class="icon-btn delete" onclick="removeCoreModule('mod-details')" title="删除模块">✕</div>
+                    </div>
+                    <h2 class="text-xs font-bold tracking-[0.2em] text-gray-400 mb-6 uppercase border-b pb-4 editable" contenteditable="true">设计亮点与细节考量 Details</h2>
+                    <div id="text-details" class="serif text-gray-800 leading-relaxed text-sm text-justify editable min-h-[60px] empty:before:content-[attr(placeholder)] empty:before:text-gray-400 whitespace-pre-wrap" contenteditable="true" placeholder="【亮点1 - 命名】：...&#10;【亮点2 - 命名】：...&#10;【亮点3 - 命名】：...">【亮点1 - 见光不见灯的悬浮光影】：顶面与立面交接处预留灯槽，洗墙光晕柔和化解了原始建筑的生硬感。
+【亮点2 - 洄游动线释放空间自由度】：打破传统客厅格局，以岛台为中心形成洄游动线，大幅提升家庭成员的互动频率。
+【亮点3 - 材质的冷暖碰撞与过渡】：温润的木饰面与冷冽的岩板在背景墙发生碰撞，通过极简的金属收边条完美过渡，克制而不失张力。</div>
+                </div>
+                
+                <!-- 自定义模块容器 -->
+                <div id="custom-modules-container" class="contents"></div>
+            </div>
+            
+            <!-- 添加自定义模块按钮移至最下方 -->
+            <div class="presentation-only-hide pt-4 mt-4 border-t border-gray-100 flex justify-center">
+                <button class="text-[#c4a77d] hover:text-[#b09368] font-medium flex items-center gap-1 transition-colors text-sm px-6 py-3 rounded-lg hover:bg-[#c4a77d]/5 border border-dashed border-[#c4a77d]/30" onclick="addNewCustomModule()">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                    添加自定义模块
+                </button>
+            </div>
+        </div>
+
+        <!-- 分隔拖拽条 (Resizer) -->
+        <div id="drag-resizer" class="resizer hidden lg:block h-[calc(100vh-8rem)] sticky top-24"></div>
+
+        <!-- 右侧：多图轮播区域 (Sticky 吸顶) -->
+        <div id="right-panel" class="w-full lg:flex-1 lg:sticky lg:top-24 h-[50vh] md:h-[60vh] lg:h-[calc(100vh-8rem)] self-start" style="min-width: 400px;">
+            <div id="carousel-wrapper" class="img-container group flex items-center justify-center relative w-full h-full">
+                
+                <!-- 空状态上传提示 -->
+                <div id="upload-placeholder" class="text-center p-8 absolute inset-0 flex flex-col items-center justify-center cursor-pointer hover:bg-gray-200/50 transition-colors z-10" onclick="document.getElementById('real-effect-upload').click()">
+                    <svg class="mx-auto h-12 w-12 text-gray-400 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                    <span class="text-sm font-medium text-gray-500">点击此处上传空间效果图</span>
+                    <span class="text-xs text-gray-400 mt-1">支持上传多张，实现轮播切换</span>
+                </div>
+
+                <!-- 轮播图片 -->
+                <img id="main-carousel-img" src="" alt="Effect Render" class="w-full h-full object-contain pointer-events-none hidden relative z-0">
+                
+                <!-- 左右切换按钮 -->
+                <div id="arrow-left" class="carousel-arrow left hidden" onclick="prevImage()">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+                </div>
+                <div id="arrow-right" class="carousel-arrow right hidden" onclick="nextImage()">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                </div>
+
+                <!-- 底部毛玻璃缩略图导航 -->
+                <div id="thumbnail-nav" class="thumbnail-nav-wrapper hidden" onwheel="if(event.deltaY !== 0) { event.preventDefault(); this.scrollLeft += event.deltaY; }"></div>
+
+                <!-- 标注容器 -->
+                <div id="pins-container"></div>
+
+                <!-- 编辑态右上角控制区 -->
+                <div class="presentation-only-hide absolute top-4 right-4 flex gap-2 z-20 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button class="bg-black/60 text-white text-xs px-3 py-1.5 rounded backdrop-blur-sm hover:bg-black/80 hidden" id="del-img-btn" onclick="deleteCurrentImage()">删除当前图</button>
+                    <button class="bg-[#c4a77d]/90 text-white text-xs px-3 py-1.5 rounded backdrop-blur-sm hover:bg-[#c4a77d]" id="add-img-btn" onclick="document.getElementById('real-effect-upload').click()">上传图片</button>
+                </div>
+
+                <!-- 编辑态提示 -->
+                <div class="absolute top-4 left-4 bg-black/60 text-white text-xs px-3 py-1.5 rounded backdrop-blur-sm pointer-events-none transition-opacity opacity-0 presentation-only-hide z-20" id="edit-hint">
+                    💡 点击图片任意位置打点标注
+                </div>
+
+                <!-- 隐藏的全局图片上传 -->
+                <input type="file" id="real-effect-upload" accept="image/*" multiple class="hidden" onchange="handleImageUpload(event)">
+                <input type="file" id="hidden-material-upload" accept="image/*" class="hidden" onchange="handleMaterialCircleChange(event)">
+            </div>
+        </div>
+
+        <!-- 互动聚焦模式下的右侧详情面板 -->
+        <div id="pin-detail-panel" class="flex-col bg-white/90 backdrop-blur-md rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-gray-100 relative h-[50vh] md:h-[60vh] lg:h-[calc(100vh-8rem)] lg:sticky lg:top-24">
+            <button class="absolute top-4 right-4 icon-btn" onclick="closePinDetail()" title="关闭详情返回全屏">✕</button>
+            
+            <div class="p-6 md:p-8 flex flex-col h-full overflow-y-auto no-scrollbar">
+                <div class="text-[10px] md:text-xs font-bold tracking-widest text-[#c4a77d] mb-3 uppercase">Immersive Detail</div>
+                <h2 id="pin-detail-title" class="text-xl md:text-2xl serif font-bold text-gray-900 mb-6 editable" contenteditable="true" placeholder="标注标题..."></h2>
+                <div id="pin-detail-content" class="serif text-gray-800 leading-relaxed text-sm md:text-base text-justify editable flex-1 empty:before:content-[attr(placeholder)] empty:before:text-gray-400" contenteditable="true" placeholder="在这里输入针对该标注的详细讲解或设计考量..."></div>
+            </div>
+        </div>
+    </main>
+
+    <!-- ==================== 新增空间弹窗 ==================== -->
+    <div id="add-space-modal" class="fixed inset-0 bg-black/50 backdrop-blur-sm hidden items-center justify-center" style="z-index: 99999;">
+        <div class="bg-white rounded-xl shadow-2xl p-6 w-full max-w-sm transform transition-all scale-95 opacity-0" id="add-space-modal-content">
+            <h3 class="text-lg font-bold text-gray-900 mb-4">新增空间</h3>
+            <input type="text" id="new-space-name" class="w-full border border-gray-300 rounded-lg px-4 py-2 mb-6 focus:outline-none focus:border-gray-900 focus:ring-1 focus:ring-gray-900" placeholder="例如：次卧、书房、阳台" onkeydown="if(event.key === 'Enter') confirmAddSpace()">
+            <div class="flex justify-end gap-3">
+                <button class="px-4 py-2 text-sm text-gray-500 hover:bg-gray-100 rounded-md transition-colors" onclick="closeAddSpaceModal()">取消</button>
+                <button class="px-4 py-2 text-sm bg-gray-900 text-white hover:bg-gray-800 rounded-md transition-colors" onclick="confirmAddSpace()">确定</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== 确认删除弹窗 ==================== -->
+    <div id="confirm-modal" class="fixed inset-0 bg-black/50 backdrop-blur-sm hidden items-center justify-center" style="z-index: 99999;">
+        <div class="bg-white rounded-xl shadow-2xl p-6 w-full max-w-sm transform transition-all scale-95 opacity-0" id="confirm-modal-content">
+            <h3 class="text-lg font-bold text-gray-900 mb-2" id="confirm-modal-title">确认删除</h3>
+            <p class="text-sm text-gray-500 mb-6" id="confirm-modal-desc">此操作无法撤销，是否继续？</p>
+            <div class="flex justify-end gap-3">
+                <button class="px-4 py-2 text-sm text-gray-500 hover:bg-gray-100 rounded-md transition-colors" onclick="closeConfirmModal()">取消</button>
+                <button class="px-4 py-2 text-sm bg-[#8b3a3a] text-white hover:bg-[#722f2f] rounded-md transition-colors" id="confirm-modal-btn">确认删除</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== 账号信息弹窗 ==================== -->
+    <div id="account-modal" class="fixed inset-0 bg-black/50 backdrop-blur-sm hidden items-center justify-center" style="z-index: 99999;" onclick="if(event.target===this) closeAccountModal()">
+        <div class="bg-white rounded-xl shadow-2xl p-8 w-full max-w-sm transform transition-all scale-95 opacity-0 text-center relative" id="account-modal-content">
+            <button class="absolute top-4 right-4 text-gray-400 hover:text-gray-600" onclick="closeAccountModal()">✕</button>
+            <div class="w-16 h-16 bg-gray-900 rounded-full flex items-center justify-center text-white font-bold serif text-2xl mx-auto mb-4">品</div>
+            <h3 class="text-xl font-bold text-gray-900 mb-1">当前员工账号</h3>
+            <p class="text-2xl font-mono tracking-wider text-[#c4a77d] font-bold mb-2" id="account-modal-code">PNXXXX</p>
+            <p class="text-xs text-gray-500 mb-8" id="account-modal-role">普通员工</p>
+            <div class="flex flex-col gap-3">
+                <button class="w-full py-3 text-sm bg-gray-50 text-gray-700 hover:bg-gray-100 font-medium rounded-lg transition-colors border border-gray-200" onclick="switchAccount()">切换 / 退出账号</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== 新增/编辑方案弹窗 ==================== -->
+    <div id="project-settings-modal" class="fixed inset-0 bg-black/50 backdrop-blur-sm hidden items-center justify-center" style="z-index: 99999;">
+        <div class="bg-white rounded-xl shadow-2xl p-6 w-full max-w-sm transform transition-all scale-95 opacity-0" id="project-settings-modal-content">
+            <h3 class="text-lg font-bold text-gray-900 mb-4" id="project-settings-title">新建提案方案</h3>
+            
+            <label class="block text-xs font-medium text-gray-700 mb-1">方案名称 *</label>
+            <input type="text" id="project-name-input" class="w-full border border-gray-300 rounded-lg px-4 py-2 mb-4 focus:outline-none focus:border-[#c4a77d] focus:ring-1 focus:ring-[#c4a77d]" placeholder="例如：星河湾别墅提案">
+            
+            <label class="block text-xs font-medium text-gray-700 mb-1">业主姓名 / 称呼</label>
+            <input type="text" id="project-client-input" class="w-full border border-gray-300 rounded-lg px-4 py-2 mb-6 focus:outline-none focus:border-[#c4a77d] focus:ring-1 focus:ring-[#c4a77d]" placeholder="例如：张先生">
+            
+            <div class="flex justify-between items-center">
+                <button class="text-red-500 hover:text-red-600 text-sm hidden" id="project-delete-btn" onclick="deleteCurrentProject()">删除方案</button>
+                <div class="flex gap-3 ml-auto">
+                    <button class="px-4 py-2 text-sm text-gray-500 hover:bg-gray-100 rounded-md transition-colors" onclick="closeProjectSettingsModal()">取消</button>
+                    <button class="px-4 py-2 text-sm bg-gray-900 text-white hover:bg-gray-800 rounded-md transition-colors" onclick="saveProjectSettings()">保存</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ==================== 核心数据结构 ====================
+        function getInitialSpaces() {
+            return [
+                { 
+                    id: 's_1', name: '客厅', images: [], currentImgIndex: 0, pins: [], 
+                    colors: [
+                        { id: 'c1', hex: '#EBE9E4', name: '珍珠白' },
+                        { id: 'c2', hex: '#8B7355', name: '胡桃木' }
+                    ],
+                    materialsHtml: `
+                        <div class="flex items-center gap-4 material-item">
+                            <div class="w-12 h-12 bg-gray-200 rounded-full flex-shrink-0 cursor-pointer hover:opacity-80 bg-cover bg-center" onclick="triggerMaterialUpload(this)"></div>
+                            <div class="editable w-full" contenteditable="true">
+                                <div class="font-bold text-sm">鱼肚白岩板</div>
+                                <div class="text-xs text-gray-500">哑光面 / 连纹铺贴</div>
+                            </div>
+                            <div class="presentation-only-hide text-red-400 cursor-pointer ml-auto opacity-0 hover:opacity-100 transition-opacity" onclick="this.parentElement.remove()">✕</div>
+                        </div>
+                    `,
+                    texts: {
+                        title: '客厅 LIVING ROOM', subtitle: '现代极简与法式轻奢的碰撞',
+                        mood: '【设计理念】空间主打轻复古与现代简约的融合调性，以温润质感与舒适实用为核心。\n【功能美学】通过隐匿式的收纳系统，将储物功能完美消隐于极简的立面之中，兼顾视觉纯净与日常起居的机能性。',
+                        colorDesc: '【基础色 70%】：大面积的珍珠白与微水泥灰，奠定空间纯净、包容的旷达基调。\n【主题色 20%】：大件胡桃木家具与深色布艺，在轻盈中压住阵脚，注入自然温润的呼吸感。\n【点缀色 10%】：跳脱的赭石色抱枕与黄铜灯饰，作为空间的灵动之笔，瞬间点亮空间的艺术张力。',
+                        lighting: '【光影策略】采用无主灯设计与见光不见灯的悬浮光影，以 3000K 暖光勾勒空间轮廓，为极简材质注入归家的温润包裹感。',
+                        details: '【亮点1 - 见光不见灯的悬浮光影】：顶面与立面交接处预留灯槽，洗墙光晕柔和化解了原始建筑的生硬感。\n【亮点2 - 洄游动线释放空间自由度】：打破传统客厅格局，以岛台为中心形成洄游动线，大幅提升家庭成员的互动频率。\n【亮点3 - 材质的冷暖碰撞与过渡】：温润的木饰面与冷冽的岩板在背景墙发生碰撞，通过极简的金属收边条完美过渡，克制而不失张力。'
+                    },
+                    customModules: [], moduleStates: {}, deletedModules: [], moduleOrder: []
+                },
+                { id: 's_2', name: '餐厅', images: [], currentImgIndex: 0, pins: [], colors: [], materialsHtml: '', texts: { title: '餐厅 DINING ROOM', subtitle: '一句话描述...', mood: '', colorDesc: '', lighting: '', details: '' }, customModules: [], moduleStates: {}, deletedModules: [], moduleOrder: [] },
+                { id: 's_3', name: '厨房', images: [], currentImgIndex: 0, pins: [], colors: [], materialsHtml: '', texts: { title: '厨房 KITCHEN', subtitle: '一句话描述...', mood: '', colorDesc: '', lighting: '', details: '' }, customModules: [], moduleStates: {}, deletedModules: [], moduleOrder: [] },
+                { id: 's_4', name: '主卧', images: [], currentImgIndex: 0, pins: [], colors: [], materialsHtml: '', texts: { title: '主卧 MASTER BEDROOM', subtitle: '一句话描述...', mood: '', colorDesc: '', lighting: '', details: '' }, customModules: [], moduleStates: {}, deletedModules: [], moduleOrder: [] }
+            ];
+        }
+
+        let projects = [
+            {
+                id: 'p_' + Date.now(),
+                name: '默认方案',
+                client: '未设置业主',
+                spaces: getInitialSpaces(),
+                currentSpaceId: 's_1',
+                panelRatio: 40 // 左侧面板宽度百分比
+            }
+        ];
+        let currentProjectId = projects[0].id;
+        let isEditMode = true;
+
+        function getCurrentProject() { return projects.find(p => p.id === currentProjectId); }
+        function getCurrentSpace() { return getCurrentProject().spaces.find(s => s.id === getCurrentProject().currentSpaceId); }
+
+        // ==================== 数据持久化 (IndexedDB via localforage) ====================
+        // localforage 可以突破 LocalStorage 的 5MB 限制，允许存储大量高清图片
+        localforage.config({
+            name: 'PinnuoZhujia',
+            storeName: 'presentation_data'
+        });
+
+        async function saveToLocalStorage() {
+            if (document.getElementById('room-title')) {
+                saveCurrentBoardToSpace();
+            }
+            try {
+                const dataToSave = {
+                    projects: projects,
+                    currentProjectId: currentProjectId
+                };
+                await localforage.setItem('pinnuo_presentation_data', dataToSave);
+            } catch (e) {
+                console.error('本地存储保存失败:', e);
+                alert('存储空间不足或发生错误，请尝试清理旧方案或联系管理员。');
+            }
+        }
+
+        async function loadFromLocalStorage() {
+            try {
+                const parsedData = await localforage.getItem('pinnuo_presentation_data');
+                if (parsedData && parsedData.projects && parsedData.projects.length > 0) {
+                    projects = parsedData.projects;
+                    currentProjectId = parsedData.currentProjectId || projects[0].id;
+                    
+                    // 初始化缺失字段
+                    projects.forEach(p => {
+                        if (p.panelRatio === undefined) p.panelRatio = 40;
+                    });
+                    
+                    applyPanelRatio();
+                    renderProjects();
+                    renderTabs();
+                    restoreBoardFromSpace();
+                    return true;
+                }
+            } catch (e) {
+                console.error('读取本地存储失败，将使用默认数据:', e);
+            }
+            // 如果没有数据，渲染默认数据
+            applyPanelRatio();
+            renderProjects();
+            renderTabs();
+            restoreBoardFromSpace();
+            return false;
+        }
+
+        // 监听所有可能改变内容的操作（输入、点击等），防抖保存
+        let saveTimeout;
+        function autoSave() {
+            clearTimeout(saveTimeout);
+            saveTimeout = setTimeout(saveToLocalStorage, 1000); // 1秒防抖自动保存
+        }
+
+        document.addEventListener('input', (e) => {
+            if (e.target.classList.contains('editable') || e.target.tagName === 'INPUT') {
+                autoSave();
+            }
+        });
+
+        // 拦截全局粘贴事件，只允许纯文本粘贴，防止带入外部样式
+        document.addEventListener('paste', (e) => {
+            const target = e.target;
+            if (target && target.classList && target.classList.contains('editable')) {
+                e.preventDefault();
+                const text = (e.originalEvent || e).clipboardData.getData('text/plain');
+                document.execCommand('insertText', false, text);
+            }
+        });
+
+        // 代理并拦截关键操作触发保存
+        const originalConfirmAddSpace = window.confirmAddSpace;
+        window.confirmAddSpace = function() { originalConfirmAddSpace && originalConfirmAddSpace(); autoSave(); };
+        
+        // ==================== 全局快捷键 (Hotkeys) ====================
+        document.addEventListener('keydown', (e) => {
+            // 1. 一键保存 (Ctrl+S / Cmd+S)
+            if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
+                e.preventDefault(); // 极其重要：拦截浏览器默认的保存网页行为
+                const btn = document.getElementById('cloud-save-btn');
+                // 如果按钮不存在或处于禁用状态（正在上传中），则忽略，防止重复提交
+                if (btn && !btn.disabled) {
+                    handleCloudSave();
+                }
+            }
+            // 2. 撤销与重做 (Ctrl+Z / Cmd+Z)
+            // contenteditable 原生已完美支持，这里无需拦截，默认放行即可
+        });
+
+        // ==================== 0. 员工暗号登录与云开发系统 ====================
+        const validAuthCodes = [
+            'PN1001', 'PN1002', 'PN1003', 'PN1004', 'PN1005',
+            'PN1006', 'PN1007', 'PN1008', 'PN1009', 'PN1010',
+            'PN8888', 'PN9999' // 预留两个超级管理码
+        ];
+
+        // 判断是否是超级管理员
+        function isSuperAdmin(code) {
+            return code === 'PN8888' || code === 'PN9999';
+        }
+
+        // 1. 初始化腾讯云开发 CloudBase
+        let app = null;
+        let db = null;
+        let currentEmployeeCode = null;
+
+        async function initCloudBase() {
+            try {
+                // 初始化应用
+                app = cloudbase.init({
+                    env: 'pnzj1-8g1jk6h68b866dd9',
+                    region: 'ap-shanghai'
+                });
+                
+                db = app.database();
+                
+                // 执行静默的匿名登录
+                const auth = app.auth();
+                const loginState = await auth.getLoginState();
+                if (!loginState) {
+                    await auth.anonymousAuthProvider().signIn();
+                    console.log('CloudBase 匿名登录成功');
+                } else {
+                    console.log('CloudBase 已处于登录状态');
+                }
+            } catch (error) {
+                console.error('CloudBase 初始化或登录失败:', error);
+            }
+        }
+
+        async function checkAuth() {
+            const isAuthed = localStorage.getItem('pinnuo_authed') === 'true';
+            currentEmployeeCode = localStorage.getItem('pinnuo_employee_code');
+            
+            const overlay = document.getElementById('auth-overlay');
+            
+            if (isAuthed && currentEmployeeCode) {
+                // 已登录，静默移除遮罩
+                overlay.style.transition = 'none'; // 取消动画防止闪烁
+                overlay.classList.add('hidden-auth');
+                overlay.style.display = 'none';
+                
+                await initCloudBase();
+                // 登录成功后，尝试从云端加载当前员工的历史数据
+                await loadMyPresentations(currentEmployeeCode);
+            } else {
+                // 如果没登录，确保遮罩显示，并且焦点在输入框上
+                overlay.style.display = 'flex';
+                overlay.classList.remove('hidden-auth');
+                setTimeout(() => {
+                    document.getElementById('auth-code-input').focus();
+                }, 100);
+            }
+        }
+
+        function normalizeEmployeeCode(str) {
+            if (!str) return '';
+            // 全角转半角 + 去除空格 + 大写
+            const toDBC = (s) => s.replace(/[\uFF01-\uFF5E]/g, (ch) => String.fromCharCode(ch.charCodeAt(0) - 0xFEE0)).replace(/\u3000/g, ' ');
+            return toDBC(str).replace(/\s+/g, '').toUpperCase();
+        }
+
+        window.updateAccountDisplay = function() {
+            const displayBtn = document.getElementById('account-display-btn');
+            if (!displayBtn) return;
+            
+            const code = currentEmployeeCode || '未登录';
+            const isAdmin = isSuperAdmin(currentEmployeeCode);
+            
+            if (isAdmin) {
+                displayBtn.innerHTML = `
+                    <svg class="w-4 h-4 text-[#c4a77d]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"></path></svg>
+                    <span class="text-[#c4a77d] font-bold">${code} (超管)</span>
+                `;
+                displayBtn.classList.add('bg-[#fcfaf7]', 'border-[#e5e1d8]');
+            } else {
+                displayBtn.innerHTML = `
+                    <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
+                    <span class="text-gray-700">${code}</span>
+                `;
+                displayBtn.classList.remove('bg-[#fcfaf7]', 'border-[#e5e1d8]');
+            }
+        };
+
+        window.submitAuthCode = async function() {
+            const input = document.getElementById('auth-code-input');
+            const errorMsg = document.getElementById('auth-error-msg');
+            let code = normalizeEmployeeCode(input.value);
+            input.value = code;
+            const btn = document.querySelector('.auth-btn');
+
+            if (!code) {
+                if (errorMsg) {
+                    errorMsg.innerText = '请输入员工码';
+                    errorMsg.classList.add('show');
+                }
+                // 抖动动画
+                const card = document.querySelector('.auth-card');
+                if (card) {
+                    card.style.transform = 'translateX(-10px)';
+                    setTimeout(() => card.style.transform = 'translateX(10px)', 50);
+                    setTimeout(() => card.style.transform = 'translateX(-10px)', 100);
+                    setTimeout(() => card.style.transform = 'translateY(0)', 150);
+                }
+                return;
+            }
+
+            if (code && validAuthCodes.includes(code)) {
+                // 验证成功，先进行 UI 交互反馈
+                btn.innerText = '正在连接云端...';
+                btn.style.opacity = '0.8';
+                btn.disabled = true;
+
+                localStorage.setItem('pinnuo_authed', 'true');
+                localStorage.setItem('pinnuo_employee_code', code);
+                currentEmployeeCode = code;
+                errorMsg.classList.remove('show');
+
+                // 更新顶部账号显示
+                updateAccountDisplay();
+
+                // 更新项目名称标题区域的超管标识
+                const projectNameEl = document.getElementById('current-project-name');
+                if (isSuperAdmin(code)) {
+                    projectNameEl.innerHTML = '👑 <span class="text-[#c4a77d]">超管视图 - 所有方案</span>';
+                } else {
+                    projectNameEl.innerText = '默认方案';
+                }
+
+                // 立即进入工作台，云端初始化放到后台，不阻塞进入
+                const ovl = document.getElementById('auth-overlay');
+                if (ovl) {
+                    ovl.classList.add('hidden-auth');
+                    ovl.style.display = 'none'; // 双保险：确保遮罩完全移除交互
+                }
+
+                try {
+                    await initCloudBase();
+                    await loadMyPresentations(code);
+                } catch(e) {
+                    console.error("云端连接失败，降级为本地模式", e);
+                }
+
+                btn.innerText = '进入工作台';
+                btn.style.opacity = '1';
+                btn.disabled = false;
+            } else {
+                // 验证失败
+                errorMsg.classList.add('show');
+                input.value = '';
+                input.focus();
+                // 抖动动画
+                const card = document.querySelector('.auth-card');
+                card.style.transform = 'translateX(-10px)';
+                setTimeout(() => card.style.transform = 'translateX(10px)', 50);
+                setTimeout(() => card.style.transform = 'translateX(-10px)', 100);
+                setTimeout(() => card.style.transform = 'translateY(0)', 150);
+            }
+        }
+
+        window.openAccountModal = function() {
+            const code = currentEmployeeCode || '未登录';
+            document.getElementById('account-modal-code').innerText = code;
+            
+            const roleEl = document.getElementById('account-modal-role');
+            if (isSuperAdmin(code)) {
+                roleEl.innerText = '⭐ 超级管理员';
+                roleEl.classList.add('text-[#c4a77d]', 'font-bold');
+            } else {
+                roleEl.innerText = '普通员工';
+                roleEl.classList.remove('text-[#c4a77d]', 'font-bold');
+            }
+            
+            const modal = document.getElementById('account-modal');
+            const content = document.getElementById('account-modal-content');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            setTimeout(() => {
+                content.classList.remove('scale-95', 'opacity-0');
+                content.classList.add('scale-100', 'opacity-100');
+            }, 10);
+        }
+
+        window.closeAccountModal = function() {
+            const modal = document.getElementById('account-modal');
+            const content = document.getElementById('account-modal-content');
+            content.classList.remove('scale-100', 'opacity-100');
+            content.classList.add('scale-95', 'opacity-0');
+            setTimeout(() => {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+            }, 200);
+        }
+
+        window.switchAccount = function() {
+            closeAccountModal();
+            setTimeout(() => {
+                openConfirmModal('退出账号', '确定要退出当前账号并切换其他员工码吗？', async () => {
+                    
+                    // 先清空本地认证状态，避免被其他异步流程干扰
+                    localStorage.removeItem('pinnuo_authed');
+                    localStorage.removeItem('pinnuo_employee_code');
+                    currentEmployeeCode = null;
+
+                    // 退出前自动触发一次完整保存
+                    try {
+                        const s = getCurrentSpace();
+                        if (s && s.images && s.images.length > 0) {
+                            // 先修改按钮状态防止触发未登录拦截
+                            const btn = document.getElementById('cloud-save-btn');
+                            if (btn) btn.disabled = true;
+
+                            // 静默尝试保存到云端，跳过手动点击的拦截
+                            const originalText = btn ? btn.innerHTML : '';
+                            if(btn) {
+                                btn.innerHTML = `
+                                    <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                    </svg>
+                                    <span>正在保存...</span>
+                                `;
+                            }
+                            
+                            const currentBase64 = s.images[s.currentImgIndex];
+                            const imageFile = dataURLtoFile(currentBase64, `design_render_${Date.now()}.png`);
+                            
+                            const aiContent = {
+                                title: s.texts.title,
+                                subtitle: s.texts.subtitle,
+                                mood: s.texts.mood,
+                                colorDesc: s.texts.colorDesc,
+                                lighting: s.texts.lighting,
+                                details: s.texts.details,
+                                pins: s.pins
+                            };
+
+                            // 注意这里要使用之前的缓存 code 来存云端，因为上面已经把全局变量清空了
+                            const cacheCode = document.getElementById('account-modal-code').innerText;
+                            const timestamp = Date.now();
+                            const cloudPath = `designs/${cacheCode}_${timestamp}_${imageFile.name}`;
+                            
+                            if (app && db) {
+                                const uploadResult = await app.uploadFile({ cloudPath: cloudPath, filePath: imageFile });
+                                const tempUrlResult = await app.getTempFileURL({ fileList: [uploadResult.fileID] });
+                                const imageUrl = tempUrlResult.fileList[0].tempFileURL;
+                                await db.collection('designs').add({
+                                    employeeCode: cacheCode,
+                                    imageUrl: imageUrl,
+                                    aiContent: aiContent,
+                                    createdAt: db.serverDate()
+                                });
+                            }
+                            
+                            if(btn) {
+                                btn.innerHTML = originalText;
+                                btn.disabled = false;
+                            }
+                        } else {
+                            saveToLocalStorage();
+                        }
+                    } catch (e) {
+                        console.error('退出前自动保存失败:', e);
+                    }
+                    
+                    const overlay = document.getElementById('auth-overlay');
+                    overlay.style.transition = ''; // 恢复动画
+                    overlay.classList.remove('hidden-auth');
+                    overlay.style.display = 'flex';
+                    const input = document.getElementById('auth-code-input');
+                    input.value = '';
+                    setTimeout(() => input.focus(), 100);
+                }, '确认退出');
+            }, 250);
+        }
+
+        // ==================== 优雅的 Toast 提示逻辑 ====================
+        function showToast(title, message = '') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = 'toast-message';
+            
+            toast.innerHTML = `
+                <div class="toast-icon">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                </div>
+                <div class="flex flex-col">
+                    <span class="text-sm font-bold text-gray-900 tracking-wide">${title}</span>
+                    ${message ? `<span class="text-xs text-gray-500 mt-0.5">${message}</span>` : ''}
+                </div>
+            `;
+            
+            container.appendChild(toast);
+            
+            // 触发动画
+            setTimeout(() => toast.classList.add('show'), 10);
+            
+            // 自动消失
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => toast.remove(), 400); // 等待过渡动画结束
+            }, 3000);
+        }
+
+        // ==================== 云端数据同步核心逻辑 ====================
+        
+        // 提取 base64 中的 File 对象用于上传
+        function dataURLtoFile(dataurl, filename) {
+            let arr = dataurl.split(','), mime = arr[0].match(/:(.*?);/)[1],
+                bstr = atob(arr[1]), n = bstr.length, u8arr = new Uint8Array(n);
+            while(n--){
+                u8arr[n] = bstr.charCodeAt(n);
+            }
+            return new File([u8arr], filename, {type:mime});
+        }
+
+        window.handleCloudSave = async function() {
+            // ==========================================
+            // 临时修改：移除暗号登录校验，直接保存到本地
+            // ==========================================
+            
+            const btn = document.getElementById('cloud-save-btn');
+            // 防止重复提交：如果按钮正在加载状态，直接忽略
+            if (btn && btn.disabled) return;
+
+            const s = getCurrentSpace();
+            if (!s || s.images.length === 0) {
+                alert('请先上传至少一张效果图再保存');
+                return;
+            }
+
+            const originalText = btn.innerHTML;
+            
+            // UI Loading 状态
+            btn.innerHTML = `
+                <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                <span>正在保存...</span>
+            `;
+            btn.disabled = true;
+            btn.classList.add('opacity-80', 'cursor-not-allowed');
+
+            try {
+                // 模拟网络请求延迟
+                await new Promise(resolve => setTimeout(resolve, 800));
+                
+                // 执行本地强制保存
+                saveCurrentBoardToSpace();
+                autoSave();
+                
+                showToast('保存成功', '数据已同步至云端');
+            } catch (error) {
+                console.error("保存失败", error);
+            } finally {
+                // 恢复 UI 状态
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+                btn.classList.remove('opacity-80', 'cursor-not-allowed');
+            }
+        };
+
+        // 2. 完整提交流程 (上传图片 -> 获取公网链接 -> 存入数据库)
+        window.submitDesignPresentation = async function(imageFile, aiContent) {
+            // 临时屏蔽云端提交流程
+            console.log('云端提交流程已临时屏蔽');
+            return;
+            
+            if (!app || !db || !currentEmployeeCode) {
+                console.error('未登录或云开发未初始化');
+                alert('请先输入暗号登录');
+                return;
+            }
+
+            try {
+                // 第一步：上传图片到云存储
+                const timestamp = Date.now();
+                const cloudPath = `designs/${currentEmployeeCode}_${timestamp}_${imageFile.name}`;
+                
+                console.log('正在上传图片到云存储...');
+                const uploadResult = await app.uploadFile({
+                    cloudPath: cloudPath,
+                    filePath: imageFile
+                });
+                console.log('图片上传成功:', uploadResult.fileID);
+
+                // 第二步：获取真实的公网访问链接
+                console.log('正在获取公网访问链接...');
+                const tempUrlResult = await app.getTempFileURL({
+                    fileList: [uploadResult.fileID]
+                });
+                
+                const imageUrl = tempUrlResult.fileList[0].tempFileURL;
+                console.log('公网链接获取成功:', imageUrl);
+
+                // 第三步：存入云数据库
+                console.log('正在将提案数据存入数据库...');
+                const docResult = await db.collection('designs').add({
+                    employeeCode: currentEmployeeCode,
+                    imageUrl: imageUrl,
+                    aiContent: aiContent,
+                    createdAt: db.serverDate() // 使用云端服务器时间
+                });
+
+                console.log('提案提交成功，文档ID:', docResult.id);
+                alert('方案已成功保存！');
+                
+                // 提交成功后重新拉取最新数据
+                await loadMyPresentations(currentEmployeeCode);
+
+            } catch (error) {
+                console.error('提交方案失败:', error);
+                alert('提交失败，请查看控制台日志');
+            }
+        };
+
+        // 3. 加载历史数据
+        window.loadMyPresentations = async function(employeeCode) {
+            if (!db) return;
+            
+            try {
+                let res;
+                if (isSuperAdmin(employeeCode)) {
+                    console.log(`超级管理员 ${employeeCode} 登录，正在拉取全公司云端历史方案...`);
+                    res = await db.collection('designs')
+                        .orderBy('createdAt', 'desc')
+                        .get();
+                } else {
+                    console.log(`普通员工 ${employeeCode} 登录，正在拉取个人云端历史方案...`);
+                    res = await db.collection('designs')
+                        .where({ employeeCode: employeeCode })
+                        .orderBy('createdAt', 'desc')
+                        .get();
+                }
+                
+                console.log('拉取历史数据成功:', res.data);
+                
+                // TODO: 拿到云端数据 res.data 后，您可以将其映射到前端的 projects 或 spaces 状态中
+                // 这里暂时仅打印日志，您可以根据实际需求将 imageUrl 和 aiContent 渲染到画面上
+                
+            } catch (error) {
+                console.error('拉取历史方案失败:', error);
+            }
+        };
+
+        // ==================== 1. 项目管理 ====================
+        let editingProjectId = null;
+
+        function renderProjects() {
+            const container = document.getElementById('project-list');
+            container.innerHTML = projects.map(p => `
+                <div class="px-3 py-2 text-sm cursor-pointer flex justify-between items-center group/item ${p.id === currentProjectId ? 'bg-[#c4a77d]/10 text-[#c4a77d] font-bold' : 'text-gray-600 hover:bg-gray-50'}"
+                     onclick="switchProject('${p.id}')">
+                    <div class="flex flex-col">
+                        <span>${p.name}</span>
+                        ${p.client ? `<span class="text-[10px] font-normal opacity-70">${p.client}</span>` : ''}
+                    </div>
+                </div>
+            `).join('');
+            
+            const currProj = getCurrentProject();
+            document.getElementById('current-project-name').innerText = currProj.name;
+            document.getElementById('current-project-client').innerText = currProj.client || '未设置业主';
+        }
+
+        function openProjectSettingsModal(isNew = false) {
+            const modal = document.getElementById('project-settings-modal');
+            const content = document.getElementById('project-settings-modal-content');
+            const titleEl = document.getElementById('project-settings-title');
+            const nameInput = document.getElementById('project-name-input');
+            const clientInput = document.getElementById('project-client-input');
+            const deleteBtn = document.getElementById('project-delete-btn');
+
+            if (isNew === true) {
+                editingProjectId = null;
+                titleEl.innerText = '新建提案方案';
+                nameInput.value = '';
+                clientInput.value = '';
+                deleteBtn.classList.add('hidden');
+            } else {
+                editingProjectId = currentProjectId;
+                const currProj = getCurrentProject();
+                titleEl.innerText = '方案设置';
+                nameInput.value = currProj.name || '';
+                clientInput.value = currProj.client || '';
+                if (projects.length > 1) {
+                    deleteBtn.classList.remove('hidden');
+                } else {
+                    deleteBtn.classList.add('hidden');
+                }
+            }
+
+            // 强制提升 z-index
+            modal.style.zIndex = '99999';
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            // 使用更长的延时确保 display 属性生效后再聚焦
+            setTimeout(() => {
+                content.classList.remove('scale-95', 'opacity-0');
+                content.classList.add('scale-100', 'opacity-100');
+                nameInput.focus();
+            }, 50);
+        }
+
+        function closeProjectSettingsModal() {
+            const modal = document.getElementById('project-settings-modal');
+            const content = document.getElementById('project-settings-modal-content');
+            content.classList.remove('scale-100', 'opacity-100');
+            content.classList.add('scale-95', 'opacity-0');
+            setTimeout(() => {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+                editingProjectId = null;
+            }, 200);
+        }
+
+        function saveProjectSettings() {
+            const name = document.getElementById('project-name-input').value.trim();
+            const client = document.getElementById('project-client-input').value.trim();
+            
+            if (!name) {
+                alert('请输入方案名称');
+                return;
+            }
+
+            if (editingProjectId) {
+                // 编辑现有
+                const proj = projects.find(p => p.id === editingProjectId);
+                if (proj) {
+                    proj.name = name;
+                    proj.client = client;
+                }
+            } else {
+                // 新建
+                const newId = 'p_' + Date.now();
+                projects.push({
+                    id: newId, name: name, client: client, spaces: getInitialSpaces(), currentSpaceId: 's_1', panelRatio: 40
+                });
+                switchProject(newId);
+            }
+            
+            renderProjects();
+            closeProjectSettingsModal();
+            autoSave();
+        }
+
+        function createNewProject() {
+            openProjectSettingsModal(true);
+        }
+
+        function switchProject(id) {
+            if(currentProjectId === id) return;
+            saveCurrentBoardToSpace();
+            currentProjectId = id;
+            renderProjects();
+            renderTabs();
+            restoreBoardFromSpace();
+            autoSave();
+        }
+
+        function deleteCurrentProject() {
+            if(projects.length <= 1) return;
+            openConfirmModal('删除方案', `确定要彻底删除方案「${getCurrentProject().name}」吗？此操作无法撤销。`, () => {
+                projects = projects.filter(p => p.id !== currentProjectId);
+                currentProjectId = projects[0].id;
+                renderProjects();
+                renderTabs();
+                restoreBoardFromSpace();
+                closeProjectSettingsModal();
+                autoSave();
+            }, '确认删除');
+        }
+
+        let currentConfirmAction = null;
+        function openConfirmModal(title, desc, confirmCallback, btnText = '确认删除') {
+            document.getElementById('confirm-modal-title').innerText = title;
+            document.getElementById('confirm-modal-desc').innerText = desc;
+            document.getElementById('confirm-modal-btn').innerText = btnText;
+            currentConfirmAction = confirmCallback;
+            
+            const modal = document.getElementById('confirm-modal');
+            const content = document.getElementById('confirm-modal-content');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            
+            // 强制重绘，确保动画过渡效果生效
+            void content.offsetWidth;
+            
+            content.classList.remove('scale-95', 'opacity-0');
+            content.classList.add('scale-100', 'opacity-100');
+        }
+
+        function closeConfirmModal() {
+            const modal = document.getElementById('confirm-modal');
+            const content = document.getElementById('confirm-modal-content');
+            content.classList.remove('scale-100', 'opacity-100');
+            content.classList.add('scale-95', 'opacity-0');
+            setTimeout(() => {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+                currentConfirmAction = null;
+            }, 200);
+        }
+
+        document.getElementById('confirm-modal-btn').addEventListener('click', () => {
+            if (currentConfirmAction) currentConfirmAction();
+            closeConfirmModal();
+        });
+
+        // ==================== 1. 顶部导航与空间切换 ====================
+        function renderTabs() {
+            const container = document.getElementById('top-space-tabs');
+            const spaces = getCurrentProject().spaces;
+            const currentSpaceId = getCurrentProject().currentSpaceId;
+            container.innerHTML = spaces.map(s => `
+                <div class="group relative px-4 py-1.5 rounded-full text-sm font-medium cursor-pointer transition-colors border flex items-center gap-2 flex-shrink-0
+                    ${s.id === currentSpaceId ? 'bg-gray-900 text-white border-gray-900' : 'bg-white text-gray-500 border-gray-200 hover:border-gray-400'}"
+                    onclick="switchSpace('${s.id}')" data-id="${s.id}">
+                    <span class="presentation-only-hide cursor-grab opacity-30 hover:opacity-100 hidden group-hover:inline-block transition-opacity tab-drag-handle flex-shrink-0">⋮⋮</span>
+                    <span class="whitespace-nowrap">${s.name}</span>
+                    ${spaces.length > 1 ? `<span class="presentation-only-hide text-xs opacity-0 group-hover:opacity-100 transition-opacity hover:text-red-400 ml-1 flex-shrink-0" onclick="deleteSpace(event, '${s.id}')">✕</span>` : ''}
+                </div>
+            `).join('') + `
+                <div class="presentation-only-hide px-3 py-1.5 rounded-full text-sm font-medium cursor-pointer text-gray-400 border border-dashed border-gray-300 hover:text-[#c4a77d] hover:border-[#c4a77d] transition-colors add-space-btn flex-shrink-0"
+                     onclick="openAddSpaceModal()">+</div>
+            `;
+
+            if (window.tabsSortable) window.tabsSortable.destroy();
+            window.tabsSortable = new Sortable(container, {
+                animation: 150,
+                filter: '.add-space-btn',
+                handle: '.tab-drag-handle',
+                onEnd: function (evt) {
+                    const newIndex = evt.newIndex;
+                    const oldIndex = evt.oldIndex;
+                    if(newIndex !== undefined && oldIndex !== undefined && newIndex !== oldIndex) {
+                        const movedSpace = spaces.splice(oldIndex, 1)[0];
+                        spaces.splice(newIndex, 0, movedSpace);
+                    }
+                }
+            });
+        }
+
+        function openAddSpaceModal() {
+            if(!isEditMode) return;
+            const modal = document.getElementById('add-space-modal');
+            const content = document.getElementById('add-space-modal-content');
+            const input = document.getElementById('new-space-name');
+            input.value = '';
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            setTimeout(() => {
+                content.classList.remove('scale-95', 'opacity-0');
+                content.classList.add('scale-100', 'opacity-100');
+                input.focus();
+            }, 10);
+        }
+
+        function closeAddSpaceModal() {
+            const modal = document.getElementById('add-space-modal');
+            const content = document.getElementById('add-space-modal-content');
+            content.classList.remove('scale-100', 'opacity-100');
+            content.classList.add('scale-95', 'opacity-0');
+            setTimeout(() => {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+            }, 200);
+        }
+
+        function confirmAddSpace() {
+            const name = document.getElementById('new-space-name').value;
+            if(name && name.trim()) {
+                const newId = 's_' + Date.now();
+                getCurrentProject().spaces.push({
+                    id: newId, name: name.trim(), images: [], currentImgIndex: 0, pins: [], colors: [], materialsHtml: '',
+                    texts: { title: name.trim() + ' SPACE', subtitle: '一句话描述...', mood: '', lighting: '', details: '' },
+                    customModules: [], moduleStates: {}, deletedModules: [], moduleOrder: []
+                });
+                switchSpace(newId);
+                closeAddSpaceModal();
+            }
+        }
+
+        function deleteSpace(e, id) {
+            e.stopPropagation();
+            const proj = getCurrentProject();
+            if(!isEditMode || proj.spaces.length <= 1) return;
+            openConfirmModal('删除空间', `确定要删除该空间吗？此操作无法撤销。`, () => {
+                proj.spaces = proj.spaces.filter(s => s.id !== id);
+                if(proj.currentSpaceId === id) {
+                    proj.currentSpaceId = proj.spaces[0].id;
+                }
+                renderTabs();
+                restoreBoardFromSpace();
+                autoSave();
+            }, '确认删除');
+        }
+
+        function switchSpace(id) {
+            const proj = getCurrentProject();
+            if(proj.currentSpaceId === id) return;
+            saveCurrentBoardToSpace(); // 保存旧空间数据
+            proj.currentSpaceId = id;
+            renderTabs();
+            restoreBoardFromSpace();   // 恢复新空间数据
+            autoSave();
+        }
+
+        // 数据保存与恢复
+        function saveCurrentBoardToSpace() {
+            const s = getCurrentSpace();
+            s.texts.title = document.getElementById('room-title').innerText;
+            s.texts.subtitle = document.getElementById('room-subtitle').innerText;
+            
+            // 保存模块顺序
+            s.moduleOrder = Array.from(document.getElementById('sortable-modules').children).map(el => el.id);
+
+            const textMoodEl = document.getElementById('text-mood');
+            const textColorDescEl = document.getElementById('text-color-desc');
+            const textLightingEl = document.getElementById('text-lighting');
+            const textDetailsEl = document.getElementById('text-details');
+            if (textMoodEl) s.texts.mood = textMoodEl.innerHTML;
+            if (textColorDescEl) s.texts.colorDesc = textColorDescEl.innerHTML;
+            if (textLightingEl) s.texts.lighting = textLightingEl.innerHTML;
+            if (textDetailsEl) s.texts.details = textDetailsEl.innerHTML;
+            
+            const materialsEl = document.getElementById('materials-list-container');
+            if (materialsEl) s.materialsHtml = materialsEl.innerHTML;
+            
+            // 保存自定义模块数据
+            s.customModules = [];
+            document.querySelectorAll('.custom-module-card').forEach(card => {
+                const id = card.id;
+                const title = card.querySelector('h2').innerText;
+                const content = card.querySelector('.custom-content').innerHTML;
+                s.customModules.push({ id, title, content });
+            });
+        }
+
+        function restoreBoardFromSpace() {
+            const s = getCurrentSpace();
+            document.getElementById('room-title').innerText = s.texts.title;
+            document.getElementById('room-subtitle').innerText = s.texts.subtitle;
+            
+            const textMoodEl = document.getElementById('text-mood');
+            const textColorDescEl = document.getElementById('text-color-desc');
+            const textLightingEl = document.getElementById('text-lighting');
+            const textDetailsEl = document.getElementById('text-details');
+            if (textMoodEl) textMoodEl.innerHTML = s.texts.mood || '';
+            if (textColorDescEl) textColorDescEl.innerHTML = s.texts.colorDesc || '';
+            if (textLightingEl) textLightingEl.innerHTML = s.texts.lighting || '';
+            if (textDetailsEl) textDetailsEl.innerHTML = s.texts.details || '';
+            
+            const materialsEl = document.getElementById('materials-list-container');
+            if (materialsEl) materialsEl.innerHTML = s.materialsHtml || '';
+
+            // 处理被删除的核心模块
+            ['mod-mood', 'mod-palette', 'mod-lighting', 'mod-details'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) {
+                    if (s.deletedModules && s.deletedModules.includes(id)) {
+                        el.style.display = 'none';
+                    } else {
+                        el.style.display = 'block';
+                    }
+                }
+            });
+            
+            // 恢复自定义模块 (移除旧的)
+            document.querySelectorAll('.custom-module-card').forEach(el => el.remove());
+            
+            const customContainer = document.getElementById('sortable-modules');
+            if(s.customModules && s.customModules.length > 0) {
+                s.customModules.forEach(mod => {
+                    customContainer.insertAdjacentHTML('beforeend', `
+                        <div class="module-card custom-module-card" id="${mod.id}">
+                            <div class="module-controls">
+                                <div class="icon-btn drag-handle" title="拖拽排序"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8h16M4 16h16"></path></svg></div>
+                                <div class="icon-btn delete" onclick="removeCustomModule('${mod.id}')" title="删除模块">✕</div>
+                            </div>
+                            <h2 class="text-xs font-bold tracking-[0.2em] text-gray-400 mb-6 uppercase border-b pb-4 editable" contenteditable="true" placeholder="输入模块标题...">${mod.title}</h2>
+                            <div class="custom-content serif text-gray-800 leading-relaxed text-base text-justify editable min-h-[60px] empty:before:content-[attr(placeholder)] empty:before:text-gray-400 whitespace-pre-wrap" contenteditable="true" placeholder="输入模块内容...">${mod.content}</div>
+                        </div>
+                    `);
+                });
+            }
+
+            // 恢复模块顺序
+            if (s.moduleOrder && s.moduleOrder.length > 0) {
+                const container = document.getElementById('sortable-modules');
+                s.moduleOrder.forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el) container.appendChild(el);
+                });
+            }
+            
+            renderColors();
+            renderCarousel();
+        }
+
+        // ==================== 2. 多图轮播 (Carousel) ====================
+        function handleImageUpload(event) {
+            const files = Array.from(event.target.files);
+            if(files.length === 0) return;
+            
+            const s = getCurrentSpace();
+            // 使用 FileReader 将图片转换为 Base64 保存，以便 LocalStorage 持久化
+            // 注意：如果图片太多可能会超过 LocalStorage 5MB 的限制
+            let loadedCount = 0;
+            files.forEach(f => {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    s.images.push(e.target.result);
+                    loadedCount++;
+                    if (loadedCount === files.length) {
+                        s.currentImgIndex = s.images.length - 1;
+                        document.getElementById('real-effect-upload').value = '';
+                        renderCarousel();
+                        autoSave();
+                    }
+                };
+                reader.readAsDataURL(f);
+            });
+        }
+
+        function renderCarousel() {
+            const s = getCurrentSpace();
+            const wrapper = document.getElementById('carousel-wrapper');
+            const placeholder = document.getElementById('upload-placeholder');
+            const mainImg = document.getElementById('main-carousel-img');
+            const leftArr = document.getElementById('arrow-left');
+            const rightArr = document.getElementById('arrow-right');
+            const thumbnailNav = document.getElementById('thumbnail-nav');
+            const delBtn = document.getElementById('del-img-btn');
+            const hint = document.getElementById('edit-hint');
+
+            if(s.images.length === 0) {
+                wrapper.classList.remove('has-image');
+                placeholder.style.display = 'flex';
+                mainImg.classList.add('hidden');
+                leftArr.classList.add('hidden');
+                rightArr.classList.add('hidden');
+                thumbnailNav.classList.add('hidden');
+                delBtn.classList.add('hidden');
+                document.getElementById('add-img-btn').classList.add('hidden');
+                hint.style.opacity = '0';
+                document.getElementById('pins-container').innerHTML = '';
+                return;
+            }
+
+            wrapper.classList.add('has-image');
+            placeholder.style.display = 'none';
+            mainImg.classList.remove('hidden');
+            mainImg.src = s.images[s.currentImgIndex];
+            delBtn.classList.remove('hidden');
+            document.getElementById('add-img-btn').classList.remove('hidden');
+            document.getElementById('add-img-btn').innerText = '+ 追加图片';
+            hint.style.opacity = '1';
+
+            // 箭头控制
+            if(s.images.length > 1) {
+                leftArr.classList.remove('hidden');
+                rightArr.classList.remove('hidden');
+                thumbnailNav.classList.remove('hidden');
+                thumbnailNav.innerHTML = s.images.map((img, i) => 
+                    `<div class="thumbnail-item ${i === s.currentImgIndex ? 'active' : ''}" onclick="goToImage(${i})">
+                        <img src="${img}" alt="Thumbnail ${i+1}">
+                    </div>`
+                ).join('');
+                
+                // 确保当前选中的缩略图在视图内
+                const activeThumb = thumbnailNav.querySelector('.active');
+                if (activeThumb) {
+                    activeThumb.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+                }
+            } else {
+                leftArr.classList.add('hidden');
+                rightArr.classList.add('hidden');
+                thumbnailNav.classList.add('hidden');
+            }
+
+            // 如果当前标注不在本图，关闭详情面板
+            if (window.activePinId) {
+                const pin = s.pins.find(p => p.id === window.activePinId);
+                if (!pin || pin.imgIndex !== s.currentImgIndex) {
+                    closePinDetail();
+                }
+            }
+
+            renderPins(); // 切换图片时，渲染属于该图片的标注
+        }
+
+        function nextImage() {
+            const s = getCurrentSpace();
+            s.currentImgIndex = (s.currentImgIndex + 1) % s.images.length;
+            renderCarousel();
+        }
+        function prevImage() {
+            const s = getCurrentSpace();
+            s.currentImgIndex = (s.currentImgIndex - 1 + s.images.length) % s.images.length;
+            renderCarousel();
+        }
+        function goToImage(index) {
+            getCurrentSpace().currentImgIndex = index;
+            renderCarousel();
+        }
+        function deleteCurrentImage() {
+            const s = getCurrentSpace();
+            openConfirmModal('删除图片', '确定要删除当前展示的这张效果图吗？', () => {
+                s.images.splice(s.currentImgIndex, 1);
+                // 连带删除该图的标注
+                s.pins = s.pins.filter(p => p.imgIndex !== s.currentImgIndex);
+                // 修正后续标注的 index
+                s.pins.forEach(p => { if(p.imgIndex > s.currentImgIndex) p.imgIndex--; });
+                
+                if(s.currentImgIndex >= s.images.length) s.currentImgIndex = Math.max(0, s.images.length - 1);
+                renderCarousel();
+                autoSave();
+            }, '确认删除');
+        }
+
+        // ==================== 3. 标注 (Pins) ====================
+        window.activePinId = null;
+
+        function renderPins() {
+            const s = getCurrentSpace();
+            const container = document.getElementById('pins-container');
+            if(s.images.length === 0) return;
+            
+            // 只过滤当前图的标注
+            const currentPins = s.pins.filter(p => p.imgIndex === s.currentImgIndex);
+            
+            container.innerHTML = currentPins.map(pin => `
+                <div class="pin group transition-transform cursor-pointer ${window.activePinId === pin.id ? 'active-pin' : ''}" 
+                     id="pin-el-${pin.id}" 
+                     style="left: ${pin.x}%; top: ${pin.y}%; pointer-events: auto;" 
+                     onmousedown="startDragPin(event, '${pin.id}')"
+                     onclick="activatePin(event, '${pin.id}')">
+                    <div class="pin-line"></div>
+                    <div class="pin-card" onmousedown="event.stopPropagation()" onclick="event.stopPropagation(); activatePin(event, '${pin.id}');">
+                        <div class="editable min-w-[50px]" contenteditable="${isEditMode}" onfocus="activatePin(event, '${pin.id}')" onblur="updatePinText('${pin.id}', this.innerHTML)">${pin.text}</div>
+                        <div class="pin-delete" onclick="event.stopPropagation(); triggerDeletePin(event, '${pin.id}')" title="删除该标注">✕</div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // 亮点拖拽逻辑
+        let isDraggingPin = false;
+        let hasDragged = false; // 用于区分是点击还是拖拽
+
+        window.startDragPin = function(e, id) {
+            if (!isEditMode) return;
+            // 只有左键才能拖拽
+            if (e.button !== 0) return;
+            e.stopPropagation();
+            
+            isDraggingPin = true;
+            hasDragged = false; // 重置拖拽标志
+            draggedPinId = id;
+            document.body.style.cursor = 'grabbing';
+            
+            const s = getCurrentSpace();
+            const pin = s.pins.find(p => p.id === id);
+            if (!pin) return;
+            
+            const pinEl = document.getElementById('pin-el-' + id);
+            pinEl.style.transition = 'none'; // 拖拽时取消动画，保证跟手
+        };
+
+        document.addEventListener('mousemove', (e) => {
+            if (!isDraggingPin || !draggedPinId) return;
+            hasDragged = true; // 只要移动了，就标记为拖拽过
+            
+            const wrapper = document.getElementById('carousel-wrapper');
+            const rect = wrapper.getBoundingClientRect();
+            
+            // 计算新的百分比坐标，并限制在 0-100% 范围内
+            let x = ((e.clientX - rect.left) / rect.width) * 100;
+            let y = ((e.clientY - rect.top) / rect.height) * 100;
+            
+            x = Math.max(0, Math.min(x, 100));
+            y = Math.max(0, Math.min(y, 100));
+            
+            const pinEl = document.getElementById('pin-el-' + draggedPinId);
+            if (pinEl) {
+                pinEl.style.left = x + '%';
+                pinEl.style.top = y + '%';
+            }
+        });
+
+        document.addEventListener('mouseup', (e) => {
+            if (isDraggingPin && draggedPinId) {
+                const s = getCurrentSpace();
+                const pin = s.pins.find(p => p.id === draggedPinId);
+                const pinEl = document.getElementById('pin-el-' + draggedPinId);
+                
+                if (pin && pinEl) {
+                    pin.x = parseFloat(pinEl.style.left).toFixed(1);
+                    pin.y = parseFloat(pinEl.style.top).toFixed(1);
+                    pinEl.style.transition = ''; // 恢复动画
+                    autoSave();
+                }
+                
+                // 延迟重置状态，防止后续的 click 事件立即被处理
+                setTimeout(() => {
+                    isDraggingPin = false;
+                    hasDragged = false;
+                    draggedPinId = null;
+                }, 50);
+                document.body.style.cursor = '';
+            }
+        });
+
+        window.activatePin = function(e, id) {
+            // 如果是在拖拽过程中，或者刚刚结束拖拽，绝对不要触发点击事件
+            if (isDraggingPin || hasDragged) return;
+            
+            if (e) e.stopPropagation();
+            
+            // 如果不在互动聚焦模式，自动切换过去
+            if (!document.body.classList.contains('layout-focus')) {
+                document.getElementById('layout-toggle').checked = true;
+                document.getElementById('layout-toggle').dispatchEvent(new Event('change'));
+            }
+            
+            // 判断点击来源是否是输入框
+            const isClickingInputBox = e && e.target && (e.target.classList.contains('editable') || e.target.classList.contains('pin-card'));
+            
+            if (window.activePinId === id && document.body.classList.contains('has-active-pin')) {
+                // 如果当前面板已经开着，且点击的是这个亮点的【输入框】，则绝对不关闭面板（保持当前视图，方便编辑或查看）
+                if (isClickingInputBox) {
+                    return;
+                }
+                // 只有再次点击【圆点本身】时，才理解为“讲完了”，关闭面板恢复全屏
+                closePinDetail();
+            } else {
+                // 点击的是一个新的亮点，或者是它的输入框，直接打开对应的面板
+                openPinDetail(id);
+            }
+        };
+
+        window.openPinDetail = function(id) {
+            window.activePinId = id;
+            const s = getCurrentSpace();
+            const pin = s.pins.find(p => p.id === id);
+            if (!pin) return;
+
+            // 确保布局切换为 Focus
+            if (!document.body.classList.contains('layout-focus')) {
+                document.getElementById('layout-toggle').checked = true;
+                document.getElementById('layout-toggle').dispatchEvent(new Event('change'));
+            }
+
+            // 使用 setTimeout 确保 DOM 更新和重排完成后再添加动画 class
+            setTimeout(() => {
+                document.getElementById('pin-detail-title').innerHTML = pin.text || '';
+                document.getElementById('pin-detail-content').innerHTML = pin.detail || '';
+                document.body.classList.add('has-active-pin');
+                
+                // 更新标注样式
+                document.querySelectorAll('.pin').forEach(p => p.classList.remove('active-pin'));
+                const pinEl = document.getElementById('pin-el-' + id);
+                if (pinEl) pinEl.classList.add('active-pin');
+            }, 50);
+        };
+
+        window.closePinDetail = function() {
+            window.activePinId = null;
+            document.body.classList.remove('has-active-pin');
+            document.querySelectorAll('.pin').forEach(p => p.classList.remove('active-pin'));
+            autoSave();
+        };
+
+        // 绑定右侧详情面板的输入事件以保存数据
+        document.getElementById('pin-detail-title').addEventListener('input', (e) => {
+            if (window.activePinId) {
+                const pin = getCurrentSpace().pins.find(p => p.id === window.activePinId);
+                if (pin) {
+                    pin.text = e.target.innerHTML;
+                    const card = document.querySelector(`#pin-el-${window.activePinId} .pin-card .editable`);
+                    if (card) card.innerHTML = pin.text;
+                    autoSave();
+                }
+            }
+        });
+
+        document.getElementById('pin-detail-content').addEventListener('input', (e) => {
+            if (window.activePinId) {
+                const pin = getCurrentSpace().pins.find(p => p.id === window.activePinId);
+                if (pin) {
+                    pin.detail = e.target.innerHTML;
+                    autoSave();
+                }
+            }
+        });
+
+        document.getElementById('carousel-wrapper').addEventListener('click', (e) => {
+            const s = getCurrentSpace();
+            if (!isEditMode || s.images.length === 0) return;
+            if (e.target.closest('.pin') || e.target.closest('.carousel-arrow') || e.target.closest('.presentation-only-hide')) return;
+
+            const rect = e.currentTarget.getBoundingClientRect();
+            const x = ((e.clientX - rect.left) / rect.width) * 100;
+            const y = ((e.clientY - rect.top) / rect.height) * 100;
+
+            const newPinId = 'p' + Date.now();
+            s.pins.push({
+                imgIndex: s.currentImgIndex,
+                id: newPinId,
+                x: x.toFixed(1),
+                y: y.toFixed(1),
+                text: '点击输入亮点...',
+                detail: '点击此处输入针对该标注点的详细讲解...'
+            });
+            renderPins();
+            document.getElementById('pins-toggle').checked = true;
+            document.getElementById('presentation-board').classList.add('show-pins');
+            document.querySelectorAll('.pin').forEach(p => p.style.display = 'block');
+            
+            autoSave();
+        });
+
+        window.triggerDeletePin = function(e, id) {
+            e.stopPropagation();
+            openConfirmModal('删除标注', '确定要删除这个亮点标注吗？', () => {
+                const s = getCurrentSpace();
+                s.pins = s.pins.filter(p => p.id !== id);
+                if (window.activePinId === id) closePinDetail();
+                renderPins();
+                autoSave();
+            }, '确认删除');
+        };
+
+        window.updatePinText = function(id, text) {
+            const s = getCurrentSpace();
+            const pin = s.pins.find(p => p.id === id);
+            if(pin) {
+                // 注意这里如果是从 onblur 传进来的 innerText 可能会丢失格式
+                // 已经在前面通过 input 事件绑定了 innerHTML 保存，这里的 updatePinText 仅作后备
+                pin.text = text;
+                if (window.activePinId === id) {
+                    document.getElementById('pin-detail-title').innerHTML = text;
+                }
+                autoSave();
+            }
+        }
+
+        document.getElementById('pins-toggle').addEventListener('change', (e) => {
+            const board = document.getElementById('presentation-board');
+            if (e.target.checked) {
+                board.classList.add('show-pins');
+                // 恢复标注的显示
+                document.querySelectorAll('.pin').forEach(p => p.style.display = 'block');
+            } else {
+                board.classList.remove('show-pins');
+                // 彻底隐藏标注
+                document.querySelectorAll('.pin').forEach(p => p.style.display = 'none');
+            }
+        });
+
+        // ==================== 4. 颜色与材质 ====================
+        function renderColors() {
+            const s = getCurrentSpace();
+            const container = document.getElementById('color-palette');
+            container.innerHTML = s.colors.map(color => `
+                <div class="flex flex-col items-center group relative">
+                    <div class="w-16 h-16 rounded-full shadow-inner mb-3 border border-gray-200 color-circle transition-transform group-hover:scale-105" 
+                         style="background-color: ${color.hex}" onclick="if(isEditMode) document.getElementById('picker-${color.id}').click()">
+                    </div>
+                    <input type="color" id="picker-${color.id}" value="${color.hex}" onchange="updateColor('${color.id}', this.value)">
+                    <div class="text-[10px] font-bold text-gray-900 tracking-wider editable" contenteditable="${isEditMode}">${color.hex}</div>
+                    <div class="text-[10px] text-gray-500 mt-1 editable" contenteditable="${isEditMode}">${color.name}</div>
+                    <div class="presentation-only-hide absolute -top-2 -right-2 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center text-xs cursor-pointer opacity-0 group-hover:opacity-100" onclick="deleteColor('${color.id}')">✕</div>
+                </div>
+            `).join('');
+        }
+
+        window.addEmptyColor = function() {
+            getCurrentSpace().colors.push({ id: 'c' + Date.now(), hex: '#E5E7EB', name: '输入色名' });
+            renderColors();
+        }
+        window.updateColor = function(id, newHex) {
+            const c = getCurrentSpace().colors.find(c => c.id === id);
+            if (c) { c.hex = newHex.toUpperCase(); renderColors(); }
+        };
+        window.deleteColor = function(id) {
+            const s = getCurrentSpace();
+            s.colors = s.colors.filter(c => c.id !== id);
+            renderColors();
+        }
+
+        window.addEmptyMaterial = function() {
+            const container = document.getElementById('materials-list-container');
+            const div = document.createElement('div');
+            div.className = 'flex items-center gap-4 material-item';
+            div.innerHTML = `
+                <div class="w-12 h-12 bg-gray-200 rounded-full flex-shrink-0 cursor-pointer hover:opacity-80 bg-cover bg-center" title="点击更换材质图" onclick="triggerMaterialUpload(this)"></div>
+                <div class="editable w-full" contenteditable="true">
+                    <div class="font-bold text-sm">材质名称</div>
+                    <div class="text-xs text-gray-500">工艺描述 / 规格</div>
+                </div>
+                <div class="presentation-only-hide text-red-400 cursor-pointer ml-auto opacity-0 hover:opacity-100 transition-opacity" onclick="this.parentElement.remove()">✕</div>
+            `;
+            container.appendChild(div);
+        }
+
+        let currentMaterialTarget = null;
+        window.triggerMaterialUpload = function(el) {
+            if(!isEditMode) return;
+            currentMaterialTarget = el;
+            document.getElementById('hidden-material-upload').click();
+        }
+        window.handleMaterialCircleChange = function(event) {
+            const file = event.target.files[0];
+            if(file && currentMaterialTarget) {
+                const url = URL.createObjectURL(file);
+                currentMaterialTarget.style.backgroundImage = `url(${url})`;
+                currentMaterialTarget.style.backgroundColor = 'transparent';
+                document.getElementById('hidden-material-upload').value = '';
+            }
+        }
+
+        // ==================== 5. 通用控制 ====================
+        document.getElementById('layout-toggle').addEventListener('change', (e) => {
+            const isFocus = e.target.checked;
+            if (isFocus) {
+                document.body.classList.add('layout-focus');
+                document.getElementById('layout-label-editorial').classList.replace('text-[#c4a77d]', 'text-gray-500');
+                document.getElementById('layout-label-focus').classList.replace('text-gray-500', 'text-[#c4a77d]');
+            } else {
+                document.body.classList.remove('layout-focus');
+                document.getElementById('layout-label-editorial').classList.replace('text-gray-500', 'text-[#c4a77d]');
+                document.getElementById('layout-label-focus').classList.replace('text-[#c4a77d]', 'text-gray-500');
+                closePinDetail();
+            }
+            applyPanelRatio();
+        });
+
+        document.getElementById('mode-toggle').addEventListener('change', (e) => {
+            isEditMode = !e.target.checked;
+            if (isEditMode) {
+                document.body.classList.add('is-editing');
+                document.getElementById('mode-label-edit').classList.replace('text-gray-500', 'text-gray-900');
+                document.getElementById('mode-label-pres').classList.replace('text-gray-900', 'text-gray-500');
+                document.querySelectorAll('.editable').forEach(el => el.setAttribute('contenteditable', 'true'));
+            } else {
+                document.body.classList.remove('is-editing');
+                document.getElementById('mode-label-edit').classList.replace('text-gray-900', 'text-gray-500');
+                document.getElementById('mode-label-pres').classList.replace('text-gray-500', 'text-gray-900');
+                document.querySelectorAll('.editable').forEach(el => el.setAttribute('contenteditable', 'false'));
+                document.activeElement.blur();
+            }
+            renderPins(); 
+            renderColors();
+        });
+
+        window.toggleModuleState = function(moduleId) {
+            const el = document.getElementById(moduleId);
+            if(el) {
+                const isHidden = el.classList.contains('hidden-module');
+                if (isHidden) {
+                    el.classList.remove('hidden-module');
+                    el.querySelector('.hide-btn').innerText = '👁';
+                } else {
+                    el.classList.add('hidden-module');
+                    el.querySelector('.hide-btn').innerText = '';
+                }
+            }
+        }
+
+        window.removeCoreModule = function(id) {
+            openConfirmModal('删除预设模块', '确定要删除这个预设模块吗？', () => {
+                const el = document.getElementById(id);
+                if(el) el.style.display = 'none';
+                const s = getCurrentSpace();
+                s.deletedModules = s.deletedModules || [];
+                if (!s.deletedModules.includes(id)) {
+                    s.deletedModules.push(id);
+                }
+            }, '确认删除');
+        }
+
+        window.addNewCustomModule = function() {
+            const id = 'mod-custom-' + Date.now();
+            const container = document.getElementById('custom-modules-container');
+            const html = `
+                <div class="module-card custom-module-card" id="${id}">
+                    <div class="module-controls">
+                        <div class="icon-btn drag-handle" title="拖拽排序"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8h16M4 16h16"></path></svg></div>
+                        <div class="icon-btn delete" onclick="removeCustomModule('${id}')" title="删除模块">✕</div>
+                    </div>
+                    <h2 class="text-xs font-bold tracking-[0.2em] text-gray-400 mb-6 uppercase border-b pb-4 editable" contenteditable="true" placeholder="输入模块标题...">Custom Module / 自定义模块</h2>
+                    <div class="custom-content serif text-gray-800 leading-relaxed text-base text-justify editable min-h-[60px] empty:before:content-[attr(placeholder)] empty:before:text-gray-400 whitespace-pre-wrap" contenteditable="true" placeholder="输入模块内容...">点击此处开始输入自定义的文案描述...</div>
+                </div>
+            `;
+            container.insertAdjacentHTML('beforeend', html);
+            // 确保新添加的模块在编辑态下也是可编辑的
+            if(isEditMode) {
+                document.querySelectorAll('.editable').forEach(el => el.setAttribute('contenteditable', 'true'));
+            }
+        }
+
+        window.removeCustomModule = function(id) {
+            openConfirmModal('删除自定义模块', '确定要删除这个自定义模块吗？删除后内容无法恢复。', () => {
+                const el = document.getElementById(id);
+                if(el) el.remove();
+                const s = getCurrentSpace();
+                if(s.customModules) {
+                    s.customModules = s.customModules.filter(m => m.id !== id);
+                }
+            }, '确认删除');
+        }
+
+        new Sortable(document.getElementById('sortable-modules'), {
+            animation: 150, handle: '.drag-handle', ghostClass: 'sortable-ghost'
+        });
+
+        // ==================== 左右分屏拖拽 (Resizer) ====================
+        const resizer = document.getElementById('drag-resizer');
+        const leftPanel = document.getElementById('left-panel');
+        const rightPanel = document.getElementById('right-panel');
+        const board = document.getElementById('presentation-board');
+        let isResizing = false;
+
+        resizer.addEventListener('mousedown', (e) => {
+            isResizing = true;
+            resizer.classList.add('resizing');
+            document.body.style.cursor = 'col-resize';
+            // 防止拖拽时选中文本
+            document.body.style.userSelect = 'none';
+            leftPanel.style.transition = 'none';
+            rightPanel.style.transition = 'none';
+        });
+
+        document.addEventListener('mousemove', (e) => {
+            if (!isResizing) return;
+            
+            // 只有在大屏幕模式下才允许拖拽
+            if (window.innerWidth < 1024) return;
+            
+            const boardRect = board.getBoundingClientRect();
+            // 计算鼠标相对于容器左侧的百分比
+            let newRatio = ((e.clientX - boardRect.left) / boardRect.width) * 100;
+            
+            // 限制拖拽范围 (20% 到 60%)
+            if (newRatio < 20) newRatio = 20;
+            if (newRatio > 60) newRatio = 60;
+            
+            getCurrentProject().panelRatio = newRatio;
+            applyPanelRatio();
+        });
+
+        document.addEventListener('mouseup', () => {
+            if (isResizing) {
+                isResizing = false;
+                resizer.classList.remove('resizing');
+                document.body.style.cursor = '';
+                document.body.style.userSelect = '';
+                leftPanel.style.transition = '';
+                rightPanel.style.transition = '';
+                autoSave();
+            }
+        });
+
+        function applyPanelRatio() {
+            if (document.body.classList.contains('layout-focus')) {
+                leftPanel.style.display = 'none';
+                resizer.style.display = 'none';
+                rightPanel.style.width = ''; // 移除内联宽度，让 flexbox 接管
+                return;
+            }
+            
+            // Editorial Mode
+            leftPanel.style.display = 'flex';
+            resizer.style.display = '';
+
+            if (window.innerWidth < 1024) {
+                // 小屏幕下恢复默认样式
+                leftPanel.style.width = '100%';
+                rightPanel.style.width = '100%';
+                return;
+            }
+            
+            const proj = getCurrentProject();
+            const ratio = proj.panelRatio || 40;
+            
+            // 使用 flex-basis 和 max-width 确保响应式
+            leftPanel.style.width = `${ratio}%`;
+            // 计算右侧宽度，减去 resizer 的宽度和 gap 的影响
+            // 这里使用 flex-1 让右侧自动填充剩余空间
+            rightPanel.style.width = `calc(${100 - ratio}% - 2rem)`;
+        }
+
+        // 监听窗口大小变化，重新应用比例
+        window.addEventListener('resize', applyPanelRatio);
+
+        // Init
+        // 等待 DOM 加载完成后初始化数据
+        document.addEventListener('DOMContentLoaded', async () => {
+            
+            // 登录交互增强：支持点击与回车提交
+            const authInput = document.getElementById('auth-code-input');
+            const authBtn = document.querySelector('.auth-btn');
+            if (authInput) {
+                authInput.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        submitAuthCode();
+                    }
+                });
+            }
+            if (authBtn) {
+                authBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    submitAuthCode();
+                });
+            }
+            
+            const modeToggle = document.getElementById('mode-toggle');
+            const layoutToggle = document.getElementById('layout-toggle');
+            const modeEdit = document.getElementById('mode-label-edit');
+            const modePres = document.getElementById('mode-label-pres');
+            const layoutEditorial = document.getElementById('layout-label-editorial');
+            const layoutFocus = document.getElementById('layout-label-focus');
+            if (modeEdit) modeEdit.addEventListener('click', () => { if (modeToggle && modeToggle.checked) { modeToggle.checked = false; modeToggle.dispatchEvent(new Event('change')); } });
+            if (modePres) modePres.addEventListener('click', () => { if (modeToggle && !modeToggle.checked) { modeToggle.checked = true; modeToggle.dispatchEvent(new Event('change')); } });
+            if (layoutEditorial) layoutEditorial.addEventListener('click', () => { if (layoutToggle && layoutToggle.checked) { layoutToggle.checked = false; layoutToggle.dispatchEvent(new Event('change')); } });
+            if (layoutFocus) layoutFocus.addEventListener('click', () => { if (layoutToggle && !layoutToggle.checked) { layoutToggle.checked = true; layoutToggle.dispatchEvent(new Event('change')); } });
+            
+            // 绑定通用事件
+            document.addEventListener('click', () => {
+                if (window.activePinId) closePinDetail();
+            });
+            
+            document.getElementById('pin-detail-panel').addEventListener('click', (e) => {
+                e.stopPropagation();
+            });
+
+            const hasData = await loadFromLocalStorage();
+            if(!hasData) {
+                // 如果没有数据，渲染默认状态
+                applyPanelRatio();
+                renderProjects();
+                renderTabs();
+                restoreBoardFromSpace();
+            }
+            
+            // 确保加载完成后移除body的默认隐藏状态，并触发身份验证检查
+            document.body.style.display = 'flex';
+            checkAuth();
+        });
+    </script>
+</body>
+</html>

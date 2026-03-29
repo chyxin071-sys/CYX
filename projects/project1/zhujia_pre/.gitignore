@@ -1,0 +1,9 @@
+node_modules/
+rename-new-shots.js
+create-placeholders.js
+clean-prd.js
+test_0.js
+.DS_Store
+.env
+package-lock.json
+package.json

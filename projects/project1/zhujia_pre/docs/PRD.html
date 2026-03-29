@@ -1,0 +1,1329 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>品诺筑家 | 高端私宅定制提案工作台 PRD</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&family=Noto+Serif+SC:wght@300;400;600;900&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
+    
+    <script type="module">
+        import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+        mermaid.initialize({ 
+            startOnLoad: true, 
+            theme: 'base',
+            themeVariables: {
+                primaryColor: '#faf9f6',
+                primaryTextColor: '#1c1c1c',
+                primaryBorderColor: '#8c7b66',
+                lineColor: '#8c7b66',
+                secondaryColor: '#f0ece1',
+                tertiaryColor: '#ffffff',
+                fontFamily: 'Inter, sans-serif'
+            }
+        });
+    </script>
+    
+    <style>
+        :root {
+            --brand-gold: #8c7b66;
+            --brand-bg: #faf9f6;
+            --brand-surface: #f2efe9;
+            --text-primary: #1c1c1c;
+            --text-secondary: #5c5c5c;
+            --text-tertiary: #8b8b8b;
+            --border-color: #e5e1d8;
+        }
+        
+        body { 
+            font-family: 'Inter', system-ui, -apple-system, sans-serif; 
+            background-color: var(--brand-bg); 
+            color: var(--text-primary); 
+            line-height: 2.1;
+            letter-spacing: 0.02em;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+        
+        h1, h2, h3, h4, .serif { 
+            font-family: 'Noto Serif SC', 'Cormorant Garamond', serif; 
+        }
+
+        ::selection {
+            background-color: var(--brand-gold);
+            color: #fff;
+        }
+
+        /* 滚动条美化 */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: var(--brand-bg); }
+        ::-webkit-scrollbar-thumb { background: #d0c9bd; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--brand-gold); }
+
+        /* 布局与留白 */
+        .editorial-content {
+            padding-bottom: 8rem;
+        }
+        
+        .section-block {
+            margin-top: 8rem;
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* 标题排版 */
+        .editorial-content h2 { 
+            font-size: 2.5rem; 
+            font-weight: 300; 
+            margin-bottom: 3rem; 
+            color: var(--text-primary);
+            display: flex;
+            align-items: baseline;
+            gap: 1.5rem;
+        }
+        
+        .section-number {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 4rem;
+            color: var(--brand-gold);
+            font-weight: 400;
+            line-height: 1;
+            opacity: 0.4;
+        }
+        
+        .editorial-content h3 { 
+            font-size: 1.5rem; 
+            font-weight: 600; 
+            margin-top: 4rem; 
+            margin-bottom: 1.5rem; 
+            color: var(--text-primary);
+            position: relative;
+            padding-left: 1.5rem;
+        }
+        
+        .editorial-content h3::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 4px;
+            height: 18px;
+            background-color: var(--brand-gold);
+        }
+
+        .editorial-content p { 
+            margin-bottom: 1.8rem; 
+            color: var(--text-secondary); 
+            font-size: 1.05rem;
+            font-weight: 300;
+            letter-spacing: 0.05em;
+        }
+        
+        .editorial-content ul { 
+            list-style-type: none; 
+            padding-left: 0; 
+            margin-bottom: 2.5rem; 
+        }
+        
+        .editorial-content li { 
+            margin-bottom: 1rem; 
+            position: relative;
+            padding-left: 2rem;
+            color: var(--text-secondary);
+            font-weight: 300;
+            letter-spacing: 0.05em;
+            line-height: 2.2;
+        }
+        
+        .editorial-content li::before {
+            content: '—';
+            color: var(--brand-gold);
+            position: absolute;
+            left: 0;
+            font-family: serif;
+        }
+
+        .editorial-content strong { 
+            color: var(--text-primary); 
+            font-weight: 500; 
+        }
+
+        /* 需求功能清单表格设计 */
+        .feature-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            margin: 3rem 0;
+            font-size: 0.95rem;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px -10px rgba(0,0,0,0.02);
+        }
+        
+        .feature-table th {
+            background-color: var(--brand-surface);
+            color: var(--text-primary);
+            font-weight: 600;
+            text-align: left;
+            padding: 1.25rem 1.5rem;
+            border-bottom: 1px solid var(--border-color);
+            font-family: 'Noto Serif SC', serif;
+        }
+        
+        .feature-table td {
+            padding: 1.25rem 1.5rem;
+            border-bottom: 1px solid var(--border-color);
+            color: var(--text-secondary);
+            vertical-align: top;
+            background-color: #fff;
+        }
+        
+        .feature-table tr:last-child td {
+            border-bottom: none;
+        }
+        
+        .feature-table tr:hover td {
+            background-color: #faf9f6;
+        }
+        
+        .feature-table .col-id {
+            font-family: 'Cormorant Garamond', serif;
+            color: var(--brand-gold);
+            font-size: 1.1rem;
+            font-weight: 600;
+            width: 10%;
+        }
+        
+        .feature-table .col-module {
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--text-tertiary);
+            width: 20%;
+        }
+        
+        .feature-table .col-title {
+            font-weight: 500;
+            color: var(--text-primary);
+            width: 25%;
+        }
+        
+        .feature-table .col-desc {
+            width: 45%;
+            line-height: 1.6;
+        }
+
+        /* 优先级徽章样式 */
+        .priority-badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            letter-spacing: 0.05em;
+            font-family: 'Inter', sans-serif;
+        }
+        
+        .priority-p0 {
+            background-color: #fdf3f2;
+            color: #d9534f;
+            border: 1px solid #fce4e2;
+        }
+        
+        .priority-p1 {
+            background-color: #f0f7ff;
+            color: #4a90e2;
+            border: 1px solid #e1effe;
+        }
+
+        /* 详细功能描述双栏布局 */
+        .feature-detail-row {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 3rem;
+            margin-bottom: 6rem;
+            padding-bottom: 4rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        @media (min-width: 1024px) {
+            .feature-detail-row {
+                grid-template-columns: 1.2fr 2fr;
+                gap: 5rem;
+            }
+            .feature-text {
+                position: sticky;
+                top: 8rem;
+                align-self: start;
+            }
+        }
+        
+        .feature-meta {
+            background: transparent;
+            padding: 0;
+            border-radius: 0;
+            margin: 1.5rem 0 2.5rem 0;
+            border-left: none;
+            color: var(--text-secondary);
+        }
+        
+        .feature-meta p {
+            font-size: 0.95rem;
+            line-height: 1.8;
+            margin-bottom: 1.5rem;
+            color: var(--text-secondary);
+        }
+        
+        .feature-visuals {
+            display: flex;
+            flex-direction: column;
+            gap: 2.5rem;
+        }
+
+        /* 原型截图占位符设计 (高级感线框) */
+        .prototype-mockup {
+            background: #fff;
+            border: 1px solid var(--border-color);
+            padding: 1rem;
+            margin: 0;
+            position: relative;
+            box-shadow: 0 20px 40px -20px rgba(0,0,0,0.03);
+            border-radius: 4px;
+        }
+        
+        .prototype-mockup::before {
+            content: 'PROTOTYPE VIEW';
+            position: absolute;
+            top: -10px;
+            left: 2rem;
+            background: var(--brand-bg);
+            padding: 0 1rem;
+            font-size: 0.7rem;
+            letter-spacing: 0.15em;
+            color: var(--brand-gold);
+            font-family: 'Inter', sans-serif;
+            font-weight: 500;
+        }
+        
+        .prototype-img-placeholder {
+            width: 100%;
+            aspect-ratio: 16/9;
+            background: var(--brand-surface);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-tertiary);
+            font-size: 0.95rem;
+            border: 1px dashed #d0c9bd;
+            transition: all 0.3s ease;
+        }
+        
+        .prototype-img-placeholder:hover {
+            background: #eae6de;
+            color: var(--brand-gold);
+            border-style: solid;
+        }
+        
+        .editable-image {
+            cursor: pointer;
+            transition: opacity 0.3s;
+            position: relative;
+        }
+        
+        .editable-image:hover {
+            opacity: 0.8;
+            outline: 2px dashed var(--brand-gold);
+            outline-offset: 2px;
+        }
+        
+        .editable-image::after {
+            content: '点击替换图片';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(28, 28, 28, 0.8);
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            font-size: 0.85rem;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+            white-space: nowrap;
+        }
+        
+        .editable-image:hover::after {
+            opacity: 1;
+        }
+
+        /* 隐藏的文件输入框 */
+        #global-image-upload {
+            display: none;
+        }
+
+        /* 侧边栏与目录 */
+        #sidebar {
+            transition: transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
+            background: #fff;
+            border-right: 1px solid var(--border-color);
+        }
+        
+        .sidebar-open { transform: translateX(0); }
+        .sidebar-closed { transform: translateX(-100%); }
+        
+        .toc-link { 
+            display: block; 
+            padding: 0.6rem 2rem; 
+            color: var(--text-tertiary); 
+            transition: all 0.3s ease; 
+            font-size: 0.9rem;
+            position: relative;
+        }
+        
+        .toc-link::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background-color: transparent;
+            transition: background-color 0.3s ease;
+        }
+        
+        .toc-link:hover { 
+            color: var(--text-primary); 
+            background-color: var(--brand-surface);
+        }
+        
+        .toc-link.active { 
+            color: var(--brand-gold); 
+            font-weight: 500; 
+            background-color: var(--brand-surface); 
+        }
+        
+        .toc-link.active::before {
+            background-color: var(--brand-gold);
+        }
+        
+        .toc-h2 { 
+            margin-top: 1.5rem; 
+            font-family: 'Noto Serif SC', serif; 
+            font-size: 1.05rem;
+            color: var(--text-primary); 
+        }
+        
+        .toc-h3 { 
+            font-size: 0.85rem; 
+            padding-left: 2.5rem; 
+        }
+        
+        .mermaid-container { 
+            background: #fff; 
+            padding: 3rem; 
+            border: 1px solid var(--border-color); 
+            margin: 3rem 0; 
+            overflow-x: auto; 
+            border-radius: 4px;
+        }
+
+        /* 首屏大标题区 */
+        .hero-section {
+            min-height: 60vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: flex-start;
+            position: relative;
+            margin-bottom: 4rem;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 4rem;
+        }
+        
+        .hero-label {
+            color: var(--brand-gold);
+            font-size: 0.8rem;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            margin-bottom: 2rem;
+            font-weight: 500;
+        }
+        
+        .hero-title {
+            font-size: 4.5rem;
+            line-height: 1.1;
+            color: var(--text-primary);
+            margin-bottom: 1.5rem;
+            letter-spacing: -0.02em;
+        }
+        
+        .hero-subtitle {
+            font-size: 1.25rem;
+            color: var(--text-secondary);
+            max-width: 600px;
+            font-weight: 300;
+            line-height: 1.8;
+            margin-bottom: 3rem;
+        }
+
+        .prototype-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            background-color: var(--brand-gold);
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 999px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            letter-spacing: 0.05em;
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            text-decoration: none;
+            box-shadow: 0 10px 30px -5px rgba(140, 123, 102, 0.4);
+            margin-top: 1.5rem;
+        }
+
+        .prototype-btn:hover {
+            transform: translateY(-2px);
+            background-color: #7a6a57;
+            box-shadow: 0 15px 35px -5px rgba(140, 123, 102, 0.5);
+            color: white;
+        }
+
+        .prototype-btn svg {
+            width: 1.1rem;
+            height: 1.1rem;
+            transition: transform 0.3s ease;
+        }
+
+        .prototype-btn:hover svg {
+            transform: translateX(4px);
+        }
+        
+        @media (max-width: 768px) {
+            .hero-title { font-size: 3rem; }
+        }
+    </style>
+</head>
+<body class="flex">
+
+    <!-- 移动端遮罩 -->
+    <div id="overlay" class="fixed inset-0 bg-[#1c1c1c]/20 backdrop-blur-sm z-30 hidden opacity-0 transition-opacity duration-500"></div>
+
+    <!-- 左侧抽屉式目录 -->
+    <aside id="sidebar" class="fixed top-0 left-0 z-40 w-72 h-screen sidebar-open flex flex-col shadow-2xl md:shadow-none">
+        <div class="p-8 border-b border-[#e5e1d8] flex items-center justify-between sticky top-0 bg-white/95 backdrop-blur-md z-10">
+            <div class="flex items-center gap-3">
+                <div class="w-8 h-8 bg-[#1c1c1c] rounded-full flex items-center justify-center text-white font-bold serif text-sm">品</div>
+                <h2 class="text-lg font-bold serif text-[#1c1c1c] tracking-wider flex items-center">PINUO <span class="text-[#8c7b66] text-[0.75rem] font-medium ml-2 border-l border-[#e5e1d8] pl-2 tracking-widest uppercase">PRD 文档</span></h2>
+            </div>
+            <button id="close-sidebar" class="text-[#8b8b8b] hover:text-[#1c1c1c] p-2 md:hidden transition-colors rounded-full hover:bg-[#f2efe9]">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+        </div>
+        <div class="px-8 py-4 bg-[#faf9f6] border-b border-[#e5e1d8]">
+            <span class="text-[0.7rem] text-[#8b8b8b] tracking-widest uppercase">Table of Contents</span>
+        </div>
+        <nav id="toc" class="py-4 flex-1 overflow-y-auto">
+            <!-- 目录由 JS 自动生成 -->
+        </nav>
+    </aside>
+
+    <!-- 主内容区 -->
+    <div id="main-content" class="flex-1 transition-transform duration-500 md:ml-72 min-w-0">
+        <!-- 顶部导航条 -->
+        <header class="sticky top-0 z-20 bg-[#faf9f6]/90 backdrop-blur-xl border-b border-[#e5e1d8] h-16 flex items-center px-6 md:px-12">
+            <button id="toggle-sidebar" class="p-2 -ml-2 text-[#8b8b8b] hover:text-[#1c1c1c] transition-colors flex items-center gap-3">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+                <span class="text-[0.75rem] tracking-widest uppercase hidden md:inline">Menu</span>
+            </button>
+            <div class="ml-auto flex items-center gap-4 text-[0.75rem] text-[#8b8b8b] tracking-widest uppercase">
+                <span class="flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-[#8c7b66] animate-pulse"></span> Document v1.0</span>
+            </div>
+        </header>
+
+        <main class="p-6 md:p-16 lg:px-24 max-w-[1200px] mx-auto editorial-content">
+            
+            <div class="hero-section">
+                <span class="hero-label">Product Requirements Document</span>
+                <h1 class="hero-title serif">
+                    <span class="block text-[1.75rem] md:text-[2.25rem] font-normal text-[#1c1c1c] tracking-widest mb-4 opacity-80">品诺筑家</span>
+                    <div class="flex flex-wrap items-baseline gap-4 md:gap-6">
+                        <span class="text-[3.5rem] md:text-[4.5rem] text-[#8c7b66] italic font-light tracking-wide">高端私宅</span>
+                        <span class="text-[3rem] md:text-[4rem] font-bold text-[#1c1c1c] tracking-normal">提案工作台</span>
+                    </div>
+                </h1>
+                <p class="hero-subtitle mt-8">以沉浸式互动和模块化专业叙事，赋能门店设计师。通过优雅的数字体验，提升高净值客户的信任感与签单转化率。</p>
+                <a href="../index.html" target="_blank" class="prototype-btn">
+                    <span>体验高保真原型</span>
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
+                </a>
+            </div>
+
+            <section class="section-block">
+                <h2><span class="section-number">01</span> 项目概述与价值目标</h2>
+                
+                <h3>1.1 项目背景与痛点</h3>
+                <p>在高端私宅定制设计领域，提案环节是达成交易的核心节点。然而，目前门店在实际业务中普遍面临以下痛点：</p>
+                <ul>
+                    <li><strong>设计师“会做图但不会讲”：</strong> 门店设计师普遍存在渲染图做得很漂亮，但在向客户提案时缺乏逻辑和感染力，无法有效传达设计价值，导致转化率低下，容易丢单。</li>
+                    <li><strong>展示形式单一枯燥：</strong> 传统提案往往是拿着几张静态效果图、全景图或枯燥的 PPT 直接给客户看，客户像看幻灯片一样，缺乏互动感和代入感，无法产生共鸣。</li>
+                    <li><strong>前后逻辑割裂：</strong> 提案时，户型改造痛点、设计灵感（Moodboard）、最终效果图往往分散在不同软件（如 CAD、图片浏览器）或文件夹里，讲解过程不连贯，削弱了专业度。</li>
+                </ul>
+
+                <h3>1.2 产品核心目标</h3>
+                <p>打造一款专为高端私宅定制门店量身定制的<strong>“提案提词器与沉浸式展示工具”</strong>。通过规范化的模块框架引导设计师梳理设计逻辑，通过极具视觉张力的“沉浸互动模式”向高净值客户传递设计的尊贵感与专业度。</p>
+
+                <h3>1.3 商业价值 (Business Value)</h3>
+                <ul>
+                    <li><strong>提升签单转化率：</strong> 通过结构化、故事化的提案流程，放大设计方案的闪光点，直接拉升客户的信任感，缩短决策周期。</li>
+                    <li><strong>沉淀品牌资产：</strong> 改变过去提案资料散落在设计师个人电脑的局面，将所有优秀提案云端化、结构化沉淀，形成门店的数字资产库和新人培训教材。</li>
+                    <li><strong>降本增效：</strong> 极简的工作台让设计师只需“传图+填空”即可生成百万级视觉效果的提案，免去制作复杂 PPT 的时间成本，专注设计本身。</li>
+                </ul>
+
+                <h3>1.4 用户价值 (User Value)</h3>
+                <ul>
+                    <li><strong>对门店设计师：</strong> 获得了一个强大的“提案辅助大脑”。内置的专业文案模板和结构化排版，帮助他们自信地讲述设计故事，摆脱“茶壶里煮饺子”的窘境。</li>
+                    <li><strong>对高净值客户：</strong> 获得“所见即所得”的尊贵服务体验。不再是被动看图，而是跟随设计师的节奏，在沉浸式的细节互动（Pins）中感受设计的用心与家的未来样貌。</li>
+                    <li><strong>对门店管理者：</strong> 获得了一个全局把控方案质量的抓手。通过超管视角，随时抽查方案水准，确保门店对外输出的专业度高度统一。</li>
+                </ul>
+            </section>
+
+            <section class="section-block">
+                <h2><span class="section-number">02</span> 用户角色与场景</h2>
+                
+                <h3>2.1 核心角色分析</h3>
+                <ul>
+                    <li><strong>门店设计师 (普通员工)：</strong> 具备优秀渲染能力，但口头表达和逻辑梳理能力参差不齐。需要一个极其简单的工具把图片和文案组合起来，并依赖专业的文案模板作为“提词器”。</li>
+                    <li><strong>门店主管 / 老板 (超级管理员)：</strong> 负责把控门店整体设计产出质量，需要审核设计师的方案。需要方便地查看全公司所有设计师做好的提案，确保优秀方案作为资产沉淀在云端。</li>
+                    <li><strong>高净值客户 (最终受众)：</strong> 对审美和细节要求极高，时间宝贵，注重体验和专属服务感。希望看到直观、连贯、有格调的家装愿景呈现，希望设计师能讲清楚每一个设计亮点背后的考量。</li>
+                </ul>
+
+                <h3>2.2 核心使用场景</h3>
+                <ul>
+                    <li><strong>场景一：方案筹备期（工作台模式）</strong><br>设计师在自己电脑上输入员工码登录。上传客餐厅效果图，系统自动生成专业文案模板。设计师填入设计理念，并在图片上打上“隐形收纳”等亮点标签，点击“保存”同步到云端。</li>
+                    <li><strong>场景二：线下门店提案（沉浸提案模式）</strong><br>客户来到门店，设计师将网页投屏。切换至“沉浸提案”模式。界面纯净化，设计师一边展示高清大图，一边对照左侧的专业文案讲解。点击图片上的“亮点标记”，右侧丝滑弹出细节说明，互动感极佳。</li>
+                </ul>
+            </section>
+
+            <section class="section-block">
+                <h2><span class="section-number">03</span> 需求功能清单</h2>
+                <p>系统按模块拆分为四大核心板块，共计10个关键功能点。</p>
+                
+                <table class="feature-table">
+                    <thead>
+                        <tr>
+                            <th class="col-module">所属模块</th>
+                            <th class="col-title">功能名称</th>
+                            <th class="col-desc">核心说明</th>
+                            <th class="col-priority" style="width: 10%; text-align: center; color: var(--brand-gold);">优先级</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- 模块 1：系统与项目管理 -->
+                        <tr>
+                            <td class="col-module" rowspan="5" style="vertical-align: middle;">系统与项目管理</td>
+                            <td class="col-title">暗号静默登录</td>
+                            <td class="col-desc">硬编码白名单验证（PN+数字），无密码注册流程，输入即登录。</td>
+                            <td style="text-align: center;"><span class="priority-badge priority-p0">P0</span></td>
+                        </tr>
+                        <tr>
+                            <td class="col-title">数据隔离与角色</td>
+                            <td class="col-desc">普通员工仅拉取个人数据；超管拉取全库数据，实现权限隔离。</td>
+                            <td style="text-align: center;"><span class="priority-badge priority-p0">P0</span></td>
+                        </tr>
+                        <tr>
+                            <td class="col-title">项目方案管理</td>
+                            <td class="col-desc">支持新增方案（项目）、删除方案，支持编辑当前项目的基本信息（如客户名称、地址等）。</td>
+                            <td style="text-align: center;"><span class="priority-badge priority-p0">P0</span></td>
+                        </tr>
+                        <tr>
+                            <td class="col-title">多空间管理</td>
+                            <td class="col-desc">顶部 Tabs 增删空间（点击+号弹出新增空间窗口），支持横向滚轮滑动，防界面挤压变形。</td>
+                            <td style="text-align: center;"><span class="priority-badge priority-p0">P0</span></td>
+                        </tr>
+                        <tr>
+                            <td class="col-title">退出与自动保存</td>
+                            <td class="col-desc">退出时二次确认，并静默执行云端/本地保存，防止数据丢失。</td>
+                            <td style="text-align: center;"><span class="priority-badge priority-p1">P1</span></td>
+                        </tr>
+
+                        <!-- 模块 2：内容编辑与工作台 -->
+                        <tr>
+                            <td class="col-module" rowspan="5" style="vertical-align: middle;">内容编辑与工作台</td>
+                            <td class="col-title">自定义模块与排序</td>
+                            <td class="col-desc">左侧核心模块支持自定义：添加自定义模块、拖动模块排序、删除模块。</td>
+                            <td style="text-align: center;"><span class="priority-badge priority-p0">P0</span></td>
+                        </tr>
+                        <tr>
+                            <td class="col-title">核心材质录入</td>
+                            <td class="col-desc">支持在特定模块中添加核心材质名称（如微水泥、木格栅等），结构化展示设计细节。</td>
+                            <td style="text-align: center;"><span class="priority-badge priority-p0">P0</span></td>
+                        </tr>
+                        <tr>
+                            <td class="col-title">品牌颜色绑定</td>
+                            <td class="col-desc">支持调出系统原生取色器，为材质或空间绑定直观的颜色色块展示。</td>
+                            <td style="text-align: center;"><span class="priority-badge priority-p0">P0</span></td>
+                        </tr>
+                        <tr>
+                            <td class="col-title">多图轮播与管理</td>
+                            <td class="col-desc">支持多图上传、追加当前图、底部缩略图导航。支持删除当前图及关联数据清理。</td>
+                            <td style="text-align: center;"><span class="priority-badge priority-p0">P0</span></td>
+                        </tr>
+                        <tr>
+                            <td class="col-title">亮点打点 (Pins) 管理</td>
+                            <td class="col-desc">在效果图上点击生成坐标点，支持拖拽微调和独立描述文本录入。支持选中后删除指定亮点。</td>
+                            <td style="text-align: center;"><span class="priority-badge priority-p0">P0</span></td>
+                        </tr>
+
+                        <!-- 模块 3：沉浸互动展示 -->
+                        <tr>
+                            <td class="col-module" rowspan="2" style="vertical-align: middle;">互动与提案展示</td>
+                            <td class="col-title">双模式与布局切换</td>
+                            <td class="col-desc">支持 工作台/沉浸模式切换；支持 标准/沉浸布局切换。</td>
+                            <td style="text-align: center;"><span class="priority-badge priority-p0">P0</span></td>
+                        </tr>
+                        <tr>
+                            <td class="col-title">细节解读面板</td>
+                            <td class="col-desc">点击 Pin 点，主图缩小，右侧丝滑滑出详细解读图文面板。</td>
+                            <td style="text-align: center;"><span class="priority-badge priority-p0">P0</span></td>
+                        </tr>
+
+                        <!-- 模块 4 -->
+                        <tr>
+                            <td class="col-module" style="vertical-align: middle;">云端服务</td>
+                            <td class="col-title">云开发平台对接</td>
+                            <td class="col-desc">无后端架构，前端直连云存储(传图)与云数据库(存JSON)。</td>
+                            <td style="text-align: center;"><span class="priority-badge priority-p1">P1</span></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </section>
+
+            <section class="section-block">
+                <h2><span class="section-number">04</span> 详细功能描述</h2>
+                <p>本章节与《03 需求功能清单》严格一一对应，详细定义每个功能点的交互规则与界面表现。每个功能均包含多状态的原型截图，以完整呈现交互链路。</p>
+
+                <!-- 1.1 -->
+                <div class="feature-detail-row">
+                    <div class="feature-text">
+                        <h3>1.1 暗号静默登录</h3>
+                        <div class="feature-meta">
+                            <p><strong>触发条件：</strong> 用户首次访问页面，或本地 <code>localStorage</code> 缓存失效时。</p>
+                            <p><strong>交互逻辑：</strong> 采用全屏毛玻璃遮罩覆盖页面。用户需输入系统预设的“内部员工码”（如 PN1001）。输入框支持回车键快捷提交。系统会自动对输入进行格式化（全角转半角、去空格、大写）。若输入错误，输入框产生左右抖动反馈；输入正确则丝滑隐藏遮罩，进入工作台。</p>
+                        </div>
+                    </div>
+                    <div class="feature-visuals">
+                        <div class="prototype-mockup">
+                            <img src="./assets/1.1-login-wait.png" alt="状态 1：全屏毛玻璃登录界面，等待输入" class="w-full h-auto rounded border border-[#e5e1d8] shadow-sm">
+                            <p class="text-sm text-center mt-3 text-[#8c7b66] font-medium">状态 1：全屏毛玻璃登录界面</p>
+                        </div>
+                        <div class="prototype-mockup">
+                            <img src="./assets/1.1-login-input.png" alt="状态 2：输入暗号状态" class="w-full h-auto rounded border border-[#e5e1d8] shadow-sm">
+                            <p class="text-sm text-center mt-3 text-[#8c7b66] font-medium">状态 2：输入暗号状态</p>
+                        </div>
+                        <div class="prototype-mockup">
+                            <img src="./assets/1.1-login-error.png" alt="状态 3：输入错误，密码框左右抖动提示" class="w-full h-auto rounded border border-[#e5e1d8] shadow-sm">
+                            <p class="text-sm text-center mt-3 text-[#8c7b66] font-medium">状态 3：输入错误抖动提示</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 1.2 -->
+                <div class="feature-detail-row">
+                    <div class="feature-text">
+                        <h3>1.2 数据隔离与角色</h3>
+                        <div class="feature-meta">
+                            <p><strong>触发条件：</strong> 员工码验证通过，进入主界面初始化数据时。</p>
+                            <p><strong>交互逻辑：</strong> 登录后，左上角显示当前员工码及角色标识（普通员工 / 超级管理员）。系统会根据角色标识发起不同的云数据库查询请求。普通员工只能查看并上传属于自己的方案；超级管理员（PN8888 / PN9999）拥有全局视角，拉取数据时获取全公司历史库。</p>
+                        </div>
+                    </div>
+                    <div class="feature-visuals">
+                        <div class="prototype-mockup">
+                            <img src="./assets/1.2-role-normal.png" alt="状态 1：普通员工视图 (左上角仅显示员工码)" class="w-full h-auto rounded border border-[#e5e1d8] shadow-sm">
+                            <p class="text-sm text-center mt-3 text-[#8c7b66] font-medium">状态 1：普通员工视图 (左上角仅显示员工码)</p>
+                        </div>
+                        <div class="prototype-mockup">
+                            <img src="./assets/1.2-role-admin.png" alt="状态 2：超级管理员视图 (带皇冠图标标识)" class="w-full h-auto rounded border border-[#e5e1d8] shadow-sm">
+                            <p class="text-sm text-center mt-3 text-[#8c7b66] font-medium">状态 2：超级管理员视图 (带特殊颜色标识)</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 1.3 -->
+                <div class="feature-detail-row">
+                    <div class="feature-text">
+                        <h3>1.3 退出与自动保存</h3>
+                        <div class="feature-meta">
+                            <p><strong>触发条件：</strong> 用户点击左上角账号 LOGO 触发下拉菜单，并选择“退出账号”。</p>
+                            <p><strong>交互逻辑：</strong> 点击“退出”后，页面弹出居中优雅确认框。点击确认后，系统会拦截退出动作，<strong>强制优先静默执行云端保存或本地缓存</strong>。只有在确保当前空间的最新修改不丢失（收到保存成功的 Promise 返回）后，才清除本地授权记录，并退回全屏登录界面。</p>
+                        </div>
+                    </div>
+                    <div class="feature-visuals">
+                        <div class="prototype-mockup">
+                            <img src="./assets/1.3-logout-menu.png" alt="状态 1：点击左上角弹出的下拉菜单 (包含退出选项)" class="w-full h-auto rounded border border-[#e5e1d8] shadow-sm">
+                            <p class="text-sm text-center mt-3 text-[#8c7b66] font-medium">状态 1：点击左上角弹出的下拉菜单 (包含退出选项)</p>
+                        </div>
+                        <div class="prototype-mockup">
+                            <img src="./assets/1.3-logout-confirm.png" alt="状态 2：退出二次确认弹窗及后台自动保存 Loading" class="w-full h-auto rounded border border-[#e5e1d8] shadow-sm">
+                            <p class="text-sm text-center mt-3 text-[#8c7b66] font-medium">状态 2：退出二次确认弹窗</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 1.4 -->
+                <div class="feature-detail-row">
+                    <div class="feature-text">
+                        <h3>1.4 项目方案管理</h3>
+                        <div class="feature-meta">
+                            <p><strong>触发条件：</strong> 用户在侧边栏点击“新增方案”或编辑当前方案信息。</p>
+                            <p><strong>交互逻辑：</strong> 支持新建空白方案。对于当前方案，可以点击标题区域进行编辑（如客户名称、项目地址等基本信息）。同时支持删除不再需要的历史方案（二次确认防止误删）。</p>
+                        </div>
+                    </div>
+                    <div class="feature-visuals">
+                        <div class="prototype-mockup">
+                            <img src="./assets/1.4-project-edit.png" alt="状态 1：编辑项目基本信息" class="w-full h-auto rounded border border-[#e5e1d8] shadow-sm">
+                            <p class="text-sm text-center mt-3 text-[#8c7b66] font-medium">状态 1：编辑项目基本信息</p>
+                        </div>
+                        <div class="prototype-mockup">
+                            <img src="./assets/1.4-project-add.png" alt="状态 2：新增或删除方案" class="w-full h-auto rounded border border-[#e5e1d8] shadow-sm">
+                            <p class="text-sm text-center mt-3 text-[#8c7b66] font-medium">状态 2：新增或删除方案</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 2.1 -->
+                <div class="feature-detail-row">
+                    <div class="feature-text">
+                        <h3>2.1 多空间管理</h3>
+                        <div class="feature-meta">
+                            <p><strong>触发条件：</strong> 用户点击顶部居中的 Tabs 区域进行空间切换或点击“+”号新增空间。</p>
+                            <p><strong>交互逻辑：</strong> 顶部居中位置的 Tabs 控制器。点击“+”号会弹出新增空间窗口，支持输入新的空间名称（如：客餐厅、主卧、厨房等）。每个空间的数据相互独立。当空间数量过多超出容器宽度时，隐藏原生滚动条，支持鼠标悬停时使用<strong>滚轮横向平滑滚动</strong>，确保不挤压右侧全局操作按钮。</p>
+                        </div>
+                    </div>
+                    <div class="feature-visuals">
+                        <div class="prototype-mockup">
+                            <img src="./assets/2.1-tabs-add.png" alt="状态 1：点击+号弹出新增空间窗口" class="w-full h-auto rounded border border-[#e5e1d8] shadow-sm">
+                            <p class="text-sm text-center mt-3 text-[#8c7b66] font-medium">状态 1：点击+号弹出新增空间窗口</p>
+                        </div>
+                        <div class="prototype-mockup">
+                            <img src="./assets/2.1-tabs-scroll.png" alt="状态 2：空间过多时，横向滚轮滑动效果" class="w-full h-auto rounded border border-[#e5e1d8] shadow-sm">
+                            <p class="text-sm text-center mt-3 text-[#8c7b66] font-medium">状态 2：空间过多时，横向滚轮滑动效果</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 2.2 -->
+                <div class="feature-detail-row">
+                    <div class="feature-text">
+                        <h3>2.2 自定义模块与排序</h3>
+                        <div class="feature-meta">
+                            <p><strong>功能说明：</strong></p>
+                            <ul>
+                                <li>允许设计师根据不同方案的需求，灵活调整左侧文案区域的模块结构。</li>
+                            </ul>
+                            <p class="mt-4"><strong>交互逻辑：</strong></p>
+                            <ul class="list-disc pl-5 mt-2 space-y-1">
+                                <li>点击“添加模块”按钮，在左侧区域底部新增一个空白的自定义内容块。</li>
+                                <li>鼠标按住模块右上角的“拖拽”图标，可上下拖动改变模块的显示顺序。</li>
+                                <li>点击模块右上角的“删除”图标，二次确认后移除该模块及内部文字。</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="feature-visuals">
+                        <div class="prototype-mockup">
+                            <img src="./assets/2.2-module-add.png" alt="状态 1：点击添加自定义模块" class="w-full h-auto rounded border border-[#e5e1d8] shadow-sm">
+                            <p class="text-sm text-center mt-3 text-[#8c7b66] font-medium">状态 1：点击添加自定义模块</p>
+                        </div>
+                        <div class="prototype-mockup">
+                            <img src="./assets/2.2-module-drag.png" alt="状态 2：拖拽调整模块顺序" class="w-full h-auto rounded border border-[#e5e1d8] shadow-sm">
+                            <p class="text-sm text-center mt-3 text-[#8c7b66] font-medium">状态 2：拖拽调整模块顺序</p>
+                        </div>
+                        <div class="prototype-mockup">
+                            <img src="./assets/2.2-module-delete.png" alt="状态 3：二次确认删除当前模块" class="w-full h-auto rounded border border-[#e5e1d8] shadow-sm">
+                            <p class="text-sm text-center mt-3 text-[#8c7b66] font-medium">状态 3：二次确认删除当前模块</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 2.3 -->
+                <div class="feature-detail-row">
+                    <div class="feature-text">
+                        <h3>2.3 核心材质录入</h3>
+                        <div class="feature-meta">
+                            <p><strong>功能说明：</strong></p>
+                            <ul>
+                                <li>结构化地展示方案中使用的关键材质，提升提案的专业度和客户的感知。</li>
+                            </ul>
+                            <p class="mt-4"><strong>交互逻辑：</strong></p>
+                            <ul class="list-disc pl-5 mt-2 space-y-1">
+                                <li>在指定的材质模块中，点击输入框即可输入材质名称（如：微水泥、胡桃木、艺术涂料等）。</li>
+                                <li>支持修改已录入的材质名称。</li>
+                                <li>点击图片占位符支持上传对应的真实材质参考图。</li>
+                                <li>数据实时保存，并在沉浸提案模式下以精美的 UI 卡片形式呈现给客户。</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="feature-visuals">
+                        <div class="prototype-mockup">
+                            <img src="./assets/2.3-material-add.png" alt="状态 1：添加并输入核心材质名称" class="w-full h-auto rounded border border-[#e5e1d8] shadow-sm">
+                            <p class="text-sm text-center mt-3 text-[#8c7b66] font-medium">状态 1：添加并输入核心材质名称</p>
+                        </div>
+                        <div class="prototype-mockup">
+                            <img src="./assets/2.3-material-edit.png" alt="状态 2：修改材质名称" class="w-full h-auto rounded border border-[#e5e1d8] shadow-sm">
+                            <p class="text-sm text-center mt-3 text-[#8c7b66] font-medium">状态 2：修改材质名称</p>
+                        </div>
+                        <div class="prototype-mockup">
+                            <img src="./assets/2.3-material-upload.png" alt="状态 3：上传材质参考图片" class="w-full h-auto rounded border border-[#e5e1d8] shadow-sm">
+                            <p class="text-sm text-center mt-3 text-[#8c7b66] font-medium">状态 3：上传材质参考图片</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 2.4 -->
+                <div class="feature-detail-row">
+                    <div class="feature-text">
+                        <h3>2.4 品牌颜色绑定</h3>
+                        <div class="feature-meta">
+                            <p><strong>功能说明：</strong></p>
+                            <ul>
+                                <li>为空间或材质提取核心主题色，建立直观的色彩感知体系。</li>
+                            </ul>
+                            <p class="mt-4"><strong>交互逻辑：</strong></p>
+                            <ul class="list-disc pl-5 mt-2 space-y-1">
+                                <li>点击添加颜色模块，自动生成空白颜色卡片。</li>
+                                <li>点击色块调出系统原生取色器（Color Picker），可以在屏幕上吸取颜色，或手动输入 HEX/RGB 色值。</li>
+                                <li>支持点击颜色卡片下方的文本框，修改并自定义该颜色的名称描述。</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="feature-visuals">
+                        <div class="prototype-mockup">
+                            <img src="./assets/2.4-color-add.png" alt="状态 1：添加颜色模块" class="w-full h-auto rounded border border-[#e5e1d8] shadow-sm">
+                            <p class="text-sm text-center mt-3 text-[#8c7b66] font-medium">状态 1：添加颜色模块</p>
+                        </div>
+                        <div class="prototype-mockup">
+                            <img src="./assets/2.4-color-picker.png" alt="状态 2：调出系统原生取色器" class="w-full h-auto rounded border border-[#e5e1d8] shadow-sm">
+                            <p class="text-sm text-center mt-3 text-[#8c7b66] font-medium">状态 2：调出系统原生取色器</p>
+                        </div>
+                        <div class="prototype-mockup">
+                            <img src="./assets/2.4-color-edit.png" alt="状态 3：修改颜色名称" class="w-full h-auto rounded border border-[#e5e1d8] shadow-sm">
+                            <p class="text-sm text-center mt-3 text-[#8c7b66] font-medium">状态 3：修改颜色名称</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 2.5 -->
+                <div class="feature-detail-row">
+                    <div class="feature-text">
+                        <h3>2.5 多图轮播与管理</h3>
+                        <div class="feature-meta">
+                            <p><strong>功能说明：</strong></p>
+                            <ul>
+                                <li>管理当前空间下的多张效果图，支持追加、切换与删除。</li>
+                            </ul>
+                            <p class="mt-4"><strong>交互逻辑：</strong></p>
+                            <ul class="list-disc pl-5 mt-2 space-y-1">
+                                <li>点击右侧主视觉区的上传按钮，支持多张高清图批量上传。</li>
+                                <li>点击“+ 追加图片”按钮，可在现有图库基础上继续添加图片。</li>
+                                <li>底部生成毛玻璃缩略图导航，点击缩略图或左右箭头可无缝切换主图。</li>
+                                <li>点击右上角“垃圾桶”图标可单独删除当前展示的图片，系统会自动清理该图片关联的所有打点数据。</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="feature-visuals">
+                        <div class="prototype-mockup">
+                            <img src="./assets/2.5-upload-empty.png" alt="状态 1：初始的虚线框上传 UI" class="w-full h-auto rounded border border-[#e5e1d8] shadow-sm">
+                            <p class="text-sm text-center mt-3 text-[#8c7b66] font-medium">状态 1：初始上传界面</p>
+                        </div>
+                        <div class="prototype-mockup">
+                            <img src="./assets/2.5-upload-normal.png" alt="状态 2：正常默认的三空间展示" class="w-full h-auto rounded border border-[#e5e1d8] shadow-sm">
+                            <p class="text-sm text-center mt-3 text-[#8c7b66] font-medium">状态 2：正常默认空间展示</p>
+                        </div>
+                        <div class="prototype-mockup">
+                            <img src="./assets/2.5-upload-multi.png" alt="状态 3：多图轮播与底部缩略图导航" class="w-full h-auto rounded border border-[#e5e1d8] shadow-sm">
+                            <p class="text-sm text-center mt-3 text-[#8c7b66] font-medium">状态 3：多图轮播与缩略图</p>
+                        </div>
+                        <div class="prototype-mockup">
+                            <img src="./assets/2.5-upload-delete.png" alt="状态 4：删除当前展示图片" class="w-full h-auto rounded border border-[#e5e1d8] shadow-sm">
+                            <p class="text-sm text-center mt-3 text-[#8c7b66] font-medium">状态 4：删除当前展示图片</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 3.1 -->
+                <div class="feature-detail-row">
+                    <div class="feature-text">
+                        <h3>3.1 双模式与布局切换</h3>
+                        <div class="feature-meta">
+                            <p><strong>触发条件：</strong> 点击顶部导航栏右侧的 Toggle 开关。</p>
+                            <p><strong>交互逻辑：</strong> 系统提供双重状态控制：<br>— <strong>状态切换：</strong>“工作台”（显示所有边框、占位符、上传按钮，供设计师编辑） vs “沉浸提案”（隐藏所有编辑类元素，进入纯净阅读态，供向客户展示）。<br>— <strong>布局切换：</strong>“标准”（左文右图，经典平分） vs “沉浸”（图片默认占满全屏，文字隐藏，点击亮点时再呼出文本）。</p>
+                        </div>
+                    </div>
+                    <div class="feature-visuals">
+                        <div class="prototype-mockup">
+                            <img src="./assets/3.1-mode-edit.png" alt="状态 1：工作台模式 + 标准布局" class="w-full h-auto rounded border border-[#e5e1d8] shadow-sm">
+                            <p class="text-sm text-center mt-3 text-[#8c7b66] font-medium">状态 1：工作台模式 + 标准布局</p>
+                        </div>
+                        <div class="prototype-mockup">
+                            <img src="./assets/3.1-mode-present-std.png" alt="状态 2：沉浸提案模式 + 标准布局" class="w-full h-auto rounded border border-[#e5e1d8] shadow-sm">
+                            <p class="text-sm text-center mt-3 text-[#8c7b66] font-medium">状态 2：沉浸提案模式 + 标准布局</p>
+                        </div>
+                        <div class="prototype-mockup">
+                            <img src="./assets/3.1-mode-present-imm.png" alt="状态 3：沉浸提案模式 + 沉浸布局 (全屏无边框)" class="w-full h-auto rounded border border-[#e5e1d8] shadow-sm">
+                            <p class="text-sm text-center mt-3 text-[#8c7b66] font-medium">状态 3：沉浸提案模式 + 沉浸布局</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 3.2 -->
+                <div class="feature-detail-row">
+                    <div class="feature-text">
+                        <h3>3.2 亮点打点 (Pins)</h3>
+                        <div class="feature-meta">
+                            <p><strong>功能说明：</strong></p>
+                            <ul>
+                                <li>在效果图上标记设计亮点，支持自定义描述文本，并提供增删改查完整闭环。</li>
+                            </ul>
+                            <p class="mt-4"><strong>交互逻辑：</strong></p>
+                            <ul class="list-disc pl-5 mt-2 space-y-1">
+                                <li>在工作台模式下开启“细节解读”开关，鼠标点击主效果图任意位置生成白色圆点坐标。</li>
+                                <li>系统自动计算基于图片宽高的相对百分比（保证缩放响应式）。</li>
+                                <li>按住点位可拖拽微调坐标。</li>
+                                <li>点击已生成的点位，会弹出一个独立的输入浮层，输入框与点位拖拽解耦，彻底解决拖拽与点击事件的冲突。</li>
+                                <li>在选中点位或展开详情时，可以点击右上角的删除图标，永久移除该亮点。</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="feature-visuals">
+                        <div class="prototype-mockup">
+                            <img src="./assets/3.2-pin-pulse.png" alt="状态 1：在效果图上点击生成白色脉冲圆点" class="w-full h-auto rounded border border-[#e5e1d8] shadow-sm">
+                            <p class="text-sm text-center mt-3 text-[#8c7b66] font-medium">状态 1：点击生成脉冲圆点</p>
+                        </div>
+                        <div class="prototype-mockup">
+                            <img src="./assets/3.2-pin-input.png" alt="状态 2：点击点位弹出的悬浮文本输入框" class="w-full h-auto rounded border border-[#e5e1d8] shadow-sm">
+                            <p class="text-sm text-center mt-3 text-[#8c7b66] font-medium">状态 2：弹出的悬浮文本输入框</p>
+                        </div>
+                        <div class="prototype-mockup">
+                            <img src="./assets/3.2-pin-multiple.png" alt="状态 3：多点位共存效果" class="w-full h-auto rounded border border-[#e5e1d8] shadow-sm">
+                            <p class="text-sm text-center mt-3 text-[#8c7b66] font-medium">状态 3：多点位打点效果</p>
+                        </div>
+                        <div class="prototype-mockup">
+                            <img src="./assets/3.2-pin-delete.png" alt="状态 4：删除指定的亮点" class="w-full h-auto rounded border border-[#e5e1d8] shadow-sm">
+                            <p class="text-sm text-center mt-3 text-[#8c7b66] font-medium">状态 4：删除指定的亮点</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 3.3 -->
+                <div class="feature-detail-row">
+                    <div class="feature-text">
+                        <h3>3.3 细节解读面板与分屏控制</h3>
+                        <div class="feature-meta">
+                            <p><strong>功能说明：</strong></p>
+                            <ul>
+                                <li>提供沉浸式的细节解读体验，支持用户自定义拖拽分屏比例。</li>
+                            </ul>
+                            <p class="mt-4"><strong>交互逻辑：</strong></p>
+                            <ul class="list-disc pl-5 mt-2 space-y-1">
+                                <li>在“沉浸提案”布局下点击效果图上的亮点，主图按比例缩小并整体向左侧移动，右侧丝滑滑出详细图文解读抽屉。</li>
+                                <li>中间会出现一个拖拽控制条（Resizer）。</li>
+                                <li>鼠标按住控制条左右拖动，可以实时动态改变左侧主图和右侧详情面板的宽度比例，松开后自动固定。</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="feature-visuals">
+                        <div class="prototype-mockup">
+                            <img src="./assets/3.3-detail-hover.png" alt="状态 1：全屏图展示，用户鼠标悬停或点击 Pin 点" class="w-full h-auto rounded border border-[#e5e1d8] shadow-sm">
+                            <p class="text-sm text-center mt-3 text-[#8c7b66] font-medium">状态 1：点击 Pin 点呼出面板</p>
+                        </div>
+                        <div class="prototype-mockup">
+                            <img src="./assets/3.3-detail-resize-before.png" alt="状态 2：拖拽分屏控制条前" class="w-full h-auto rounded border border-[#e5e1d8] shadow-sm">
+                            <p class="text-sm text-center mt-3 text-[#8c7b66] font-medium">状态 2：拖拽分屏控制条前</p>
+                        </div>
+                        <div class="prototype-mockup">
+                            <img src="./assets/3.3-detail-resize-after.png" alt="状态 3：拖拽分屏控制条后" class="w-full h-auto rounded border border-[#e5e1d8] shadow-sm">
+                            <p class="text-sm text-center mt-3 text-[#8c7b66] font-medium">状态 3：拖动改变宽度比例</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 4.1 -->
+                <div class="feature-detail-row">
+                    <div class="feature-text">
+                        <h3>4.1 云开发平台对接</h3>
+                        <div class="feature-meta">
+                            <p><strong>触发条件：</strong> 用户完成编辑，点击右上角“保存”按钮。</p>
+                            <p><strong>交互逻辑：</strong> 采用无后端架构，前端引入 Tencent CloudBase SDK。点击保存后，按钮转为 Loading 状态并锁定防连点。系统首先将本地的 Base64 缩略图还原为 File 对象，调用云存储 API 上传，获取公网 CDN 链接。随后将界面所有的文本内容、坐标数组、图片链接整合成 JSON 对象，调用云数据库 API 进行写入。完成后恢复 UI 并弹出“保存成功”提示。</p>
+                        </div>
+                    </div>
+                    <div class="feature-visuals">
+                        <div class="prototype-mockup">
+                            <img src="./assets/4.1-save-loading.png" alt="状态 1：点击保存，按钮转为 Loading (正在同步至云端)" class="w-full h-auto rounded border border-[#e5e1d8] shadow-sm">
+                            <p class="text-sm text-center mt-3 text-[#8c7b66] font-medium">状态 1：点击保存，按钮转为 Loading (正在同步至云端)</p>
+                        </div>
+                        <div class="prototype-mockup">
+                            <img src="./assets/4.1-save-success.png" alt="状态 2：保存成功，右上角弹出优雅的 Toast 提示" class="w-full h-auto rounded border border-[#e5e1d8] shadow-sm">
+                            <p class="text-sm text-center mt-3 text-[#8c7b66] font-medium">状态 2：保存成功，右上角弹出优雅的 Toast 提示</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="section-block">
+                <h2><span class="section-number">05</span> 业务流程逻辑图</h2>
+                <p>以下是系统核心链路的 Mermaid 流程图描述，直观展现数据流转与状态判断逻辑。</p>
+
+                <h3>5.1 鉴权与初始化流程</h3>
+                <div class="mermaid-container">
+                    <pre class="mermaid">
+                    graph TD
+                        A[打开网页] --> B{LocalStorage是否有缓存?}
+                        B -- 是 --> C[静默移除遮罩]
+                        B -- 否 --> D[显示全屏毛玻璃登录框]
+                        D --> E[用户输入员工码并回车/点击]
+                        E --> F{校验: 格式与白名单?}
+                        F -- 否 --> G[输入框抖动, 提示'员工码无效']
+                        F -- 是 --> H[隐藏遮罩, 存入本地缓存]
+                        
+                        C --> I[初始化 CloudBase SDK]
+                        H --> I
+                        
+                        I --> J{是否为超级管理员 PN8888/PN9999?}
+                        J -- 是 --> K[云数据库: 拉取全公司历史提案]
+                        J -- 否 --> L[云数据库: 拉取对应 employeeCode 历史提案]
+                        
+                        K --> M[渲染工作台界面]
+                        L --> M
+                    </pre>
+                </div>
+
+                <h3>5.2 沉浸提案打点互动流程</h3>
+                <div class="mermaid-container">
+                    <pre class="mermaid">
+                    sequenceDiagram
+                        participant U as 设计师 (用户)
+                        participant UI as 前端界面
+                        participant S as 状态管理 (JS)
+
+                        Note over U, S: 【阶段一：编辑与打点】
+                        U->>UI: 开启“细节解读”开关
+                        U->>UI: 在效果图上点击某处 (如：吊顶)
+                        UI->>S: 计算点击位置相对图片的百分比 (x%, y%)
+                        S-->>UI: 在对应位置渲染 Pin 点组件
+                        U->>UI: 拖拽 Pin 点微调位置
+                        UI->>S: 更新坐标数据，防止触发点击事件
+                        U->>UI: 在弹出的输入框填写“无主灯设计”
+                        UI->>S: 保存至 pins 数组
+
+                        Note over U, S: 【阶段二：客户提案】
+                        U->>UI: 切换至「沉浸提案」模式
+                        UI->>UI: 隐藏所有编辑框、导航栏
+                        U->>UI: 点击刚才打好的 Pin 点
+                        UI->>UI: 左侧图片区域缩小并左移
+                        UI->>UI: 右侧丝滑滑出对应 Pin 点详细描述面板
+                        U->>UI: 再次点击 Pin
+                        UI->>UI: 面板收回，图片恢复全屏
+                    </pre>
+                </div>
+
+                <h3>5.3 数据持久化与云端保存流程</h3>
+                <div class="mermaid-container">
+                    <pre class="mermaid">
+                    graph TD
+                        A[用户触发数据变更] --> B[输入框 input / 切换图片 / 打点]
+                        B --> C[触发防抖定时器]
+                        C --> D[执行 saveToLocalStorage]
+                        D --> E[(浏览器 LocalStorage)]
+                        
+                        F[用户点击保存按钮] --> G{校验: 是否有图片?}
+                        G -- 否 --> H[阻断并提示请先上传效果图]
+                        G -- 是 --> I[UI 变为正在保存... 禁用按钮]
+                        
+                        I --> J[从 LocalStorage 提取恢复 currentEmployeeCode]
+                        J --> K[Base64 图片转 File 对象]
+                        K --> L[调用 app.uploadFile 上传云存储]
+                        L --> M[获取图片公网 tempFileURL]
+                        M --> N[提取当前空间文案、标题、Pins数据]
+                        N --> O[调用 db.collection.add 写入云数据库]
+                        O --> P[恢复 UI 状态, 提示保存成功]
+                    </pre>
+                </div>
+            </section>
+
+            <section class="section-block">
+                <h2><span class="section-number">06</span> 数据埋点与异常处理</h2>
+                
+                <h3>6.1 核心数据埋点需求</h3>
+                <p>为了后续分析转化率和优化产品，系统需在关键链路进行数据埋点：</p>
+                <table class="feature-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 20%;">事件名称</th>
+                            <th style="width: 25%;">触发时机</th>
+                            <th style="width: 55%;">上报参数 (Properties)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>login_success</code></td>
+                            <td>用户成功输入暗号进入工作台</td>
+                            <td><code>employee_code</code>, <code>role</code> (normal/admin), <code>timestamp</code></td>
+                        </tr>
+                        <tr>
+                            <td><code>image_uploaded</code></td>
+                            <td>本地图片成功加载至浏览器</td>
+                            <td><code>image_count</code>, <code>file_size_mb</code></td>
+                        </tr>
+                        <tr>
+                            <td><code>pin_created</code></td>
+                            <td>在图片上成功添加一个新的互动打点</td>
+                            <td><code>space_id</code>, <code>pin_coordinates</code>, <code>has_text</code> (boolean)</td>
+                        </tr>
+                        <tr>
+                            <td><code>mode_switched</code></td>
+                            <td>切换顶部“沉浸提案”或“细节解读”开关</td>
+                            <td><code>target_mode</code> (present/edit/focus), <code>duration_in_prev_mode_sec</code></td>
+                        </tr>
+                        <tr>
+                            <td><code>cloud_save_success</code></td>
+                            <td>提案成功写入云数据库</td>
+                            <td><code>total_pins</code>, <code>text_length</code>, <code>is_update</code> (boolean)</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h3 class="mt-8">6.2 边界与异常处理 (Edge Cases)</h3>
+                <ul>
+                    <li><strong>断网/弱网环境：</strong> 用户在编辑时断网，系统通过 <code>localStorage</code> 实时保存本地。点击“保存云端”时若失败，抛出优雅的 Toast 提示“网络异常，已为您保存在本地，请稍后重试”，不丢失任何数据。</li>
+                    <li><strong>超大图片上传：</strong> 前端读取本地图片时，若单张图片超过 10MB，自动在前端进行 Canvas 压缩，保证 Base64 字符串不会导致浏览器内存溢出（OOM）。</li>
+                    <li><strong>登录态过期：</strong> 员工码被后台封禁或更改。用户点击保存时，若云端接口返回 <code>401 Unauthorized</code>，拦截保存动作，弹出重新登录遮罩，登录成功后自动接续之前的保存动作。</li>
+                    <li><strong>极端比例图片：</strong> 客户上传极宽或极长的长图。容器采用 <code>object-fit: cover/contain</code> 自适应，确保 Pin 点的百分比坐标 <code>(x%, y%)</code> 在任何屏幕尺寸下计算都不会发生偏移。</li>
+                </ul>
+            </section>
+
+            <section class="section-block">
+                <h2><span class="section-number">07</span> 未来演进规划 (AI 赋能)</h2>
+                <p>在 V2.0 阶段，工作台将从“辅助提词器”向“智能生成大脑”演进，全面接入大语言模型 (LLM) 和视觉多模态大模型 (VLM) 能力：</p>
+
+                <ul>
+                    <li><strong>图生文 (Image to Text) 智能解析：</strong> 
+                        <br>设计师上传效果图后，不再需要手动填空。系统自动调用视觉大模型（如 GPT-4V）分析图中材质（如：微水泥、木格栅）、风格（如：极简诧寂）、灯光（如：无主灯氛围），一键生成高级定制文案。</li>
+                    <li><strong>AI 智能打点识别：</strong> 
+                        <br>系统自动识别图中的核心家具和结构亮点（比如自动识别出“隐形门”、“悬浮电视柜”），并自动在相应坐标生成 Pin 点建议，设计师只需点击确认即可。</li>
+                    <li><strong>客户意向分析：</strong> 
+                        <br>在“沉浸提案”模式下，记录客户对哪个 Pin 点停留时间最长、展开次数最多，提案结束后自动生成《客户意向热力图报告》发给设计师，助力精准逼单。</li>
+                </ul>
+            </section>
+
+        </main>
+    </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const toc = document.getElementById('toc');
+            const headings = document.querySelectorAll('.editorial-content h2, .editorial-content h3');
+            
+            // Generate TOC
+            headings.forEach((heading, index) => {
+                if (!heading.id) {
+                    heading.id = 'heading-' + index;
+                }
+                const link = document.createElement('a');
+                link.href = '#' + heading.id;
+                link.textContent = heading.innerText.replace(/^[0-9]+\s*/, '');
+                link.className = 'toc-link ' + (heading.tagName.toLowerCase() === 'h2' ? 'toc-h2' : 'toc-h3');
+                toc.appendChild(link);
+            });
+
+            // Intersection Observer for Active TOC Link
+            const observerOptions = {
+                root: null,
+                rootMargin: '0px 0px -80% 0px',
+                threshold: 0
+            };
+            
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        const id = entry.target.getAttribute('id');
+                        document.querySelectorAll('.toc-link').forEach(link => {
+                            link.classList.remove('active');
+                            if (link.getAttribute('href') === '#' + id) {
+                                link.classList.add('active');
+                            }
+                        });
+                    }
+                });
+            }, observerOptions);
+            
+            headings.forEach(heading => observer.observe(heading));
+
+            // Sidebar Toggle Logic
+            const sidebar = document.getElementById('sidebar');
+            const toggleBtn = document.getElementById('toggle-sidebar');
+            const closeBtn = document.getElementById('close-sidebar');
+            const overlay = document.getElementById('overlay');
+            const mainContent = document.getElementById('main-content');
+
+            let isSidebarOpen = window.innerWidth >= 768;
+
+            function updateSidebarState() {
+                if (isSidebarOpen) {
+                    sidebar.classList.remove('sidebar-closed');
+                    sidebar.classList.add('sidebar-open');
+                    mainContent.classList.add('md:ml-72');
+                    if (window.innerWidth < 768) {
+                        overlay.classList.remove('hidden');
+                        setTimeout(() => overlay.classList.remove('opacity-0'), 10);
+                    }
+                } else {
+                    sidebar.classList.remove('sidebar-open');
+                    sidebar.classList.add('sidebar-closed');
+                    mainContent.classList.remove('md:ml-72');
+                    overlay.classList.add('opacity-0');
+                    setTimeout(() => overlay.classList.add('hidden'), 500);
+                }
+            }
+
+            function toggleSidebar() {
+                isSidebarOpen = !isSidebarOpen;
+                updateSidebarState();
+            }
+
+            toggleBtn.addEventListener('click', toggleSidebar);
+            closeBtn.addEventListener('click', toggleSidebar);
+            overlay.addEventListener('click', toggleSidebar);
+            
+            toc.addEventListener('click', (e) => {
+                if (e.target.tagName === 'A' && window.innerWidth < 768) {
+                    toggleSidebar();
+                }
+            });
+
+            // Initial state check
+            window.addEventListener('resize', () => {
+                if (window.innerWidth >= 768 && !isSidebarOpen) {
+                    isSidebarOpen = true;
+                    updateSidebarState();
+                } else if (window.innerWidth < 768 && isSidebarOpen) {
+                    isSidebarOpen = false;
+                    updateSidebarState();
+                }
+            });
+            
+            // Set initial state
+            if (window.innerWidth < 768) {
+                isSidebarOpen = false;
+                sidebar.classList.remove('sidebar-open');
+                sidebar.classList.add('sidebar-closed');
+            }
+        });
+    </script>
+</body>
+</html>

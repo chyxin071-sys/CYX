@@ -58,31 +58,33 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            margin-bottom: 2rem;
+            margin-bottom: 3rem;
+            margin-top: 1rem;
             z-index: 50;
             width: 100%;
         }
 
         .phone-mockup {
-            width: 393px;
-            height: 852px;
+            /* 采用更接近现代 iPhone 的比例 19.5:9，比如 390x844 */
+            width: 390px;
+            height: 844px;
             border-radius: 44px;
             border: 12px solid var(--text);
             overflow: hidden;
             box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
             background-color: #121212;
             position: relative;
-            /* 移动端使用更小的缩放比例，基于屏幕高度和宽度动态计算，保证完整显示 */
-            transform: scale(min(0.65, calc(80vh / 852px))); 
+            /* 移动端使用更合理的缩放比例，基于屏幕高度和宽度动态计算，保证完整显示且留有呼吸空间 */
+            transform: scale(min(0.7, calc(70vh / 844px))); 
             transform-origin: center center; /* 移动端居中对齐 */
         }
 
         /* 移动端高度容器适应缩放后的手机高度 */
         @media (max-width: 767px) {
             .phone-mockup-container {
-                height: calc(852px * min(0.65, calc(80vh / 852px)));
-                margin-top: -2rem; /* 稍微往上提一点 */
-                margin-bottom: 0rem;
+                height: calc(844px * min(0.7, calc(70vh / 844px)));
+                margin-top: -1rem; /* 稍微往上提一点 */
+                margin-bottom: 2rem;
             }
         }
 

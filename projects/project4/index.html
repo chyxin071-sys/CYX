@@ -61,11 +61,11 @@
         }
 
         .phone-mockup {
-            /* 严格锁定 1:2 比例，绝不拉伸 */
-            aspect-ratio: 1 / 2;
-            /* 移动端以屏幕高度为基准，确保一屏内能完整显示，消除“细长感” */
-            height: 65vh;
-            max-height: 700px;
+            /* 使用严格的数学计算锁定 1:2 比例，兼容所有移动端浏览器 */
+            width: 80vw;
+            height: 160vw;
+            max-width: 340px;
+            max-height: 680px;
             border-radius: 36px;
             border: 10px solid var(--text);
             overflow: hidden;
@@ -84,7 +84,10 @@
                 margin: 0;
             }
             .phone-mockup {
-                height: 75vh;
+                width: 360px;
+                height: 720px;
+                max-width: none;
+                max-height: none;
                 border-radius: 44px;
                 border-width: 12px;
             }

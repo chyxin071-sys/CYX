@@ -2897,7 +2897,7 @@
     </main>
     
         <!-- Right Tab (Prototype) -->
-        <div class="side-tab right-tab" id="right-tab" onclick="window.open('https://lanhuapp.com/url/7l0qO-08tXw', '_blank')">
+        <div class="side-tab right-tab" id="right-tab" onclick="window.open('../prototype/prototype_v1.0.html', '_blank')">
             体验原型
         </div>
 
@@ -2984,9 +2984,9 @@
 
     // 控制原型侧边栏的显示/隐藏与跳转 (State C)
     function toggleGlobalPreview(hash) {
-        // 如果是在手机端，直接在新窗口打开原型，不再尝试在侧边栏显示
+        // 如果是在手机端，直接在新窗口打开本地原型，不再尝试在侧边栏显示
         if (window.innerWidth <= 768) {
-            window.open('https://lanhuapp.com/url/7l0qO-08tXw', '_blank');
+            window.open('../prototype/prototype_v1.0.html', '_blank');
             return;
         }
         

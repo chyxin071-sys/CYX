@@ -73,15 +73,23 @@
                 top: 0;
                 right: 0;
                 left: 0;
-                padding: 1rem 1.5rem;
-                gap: 1.5rem;
-                background: rgba(245, 245, 245, 0.9);
+                padding: 1rem;
+                gap: 1.2rem;
+                background: rgba(245, 245, 245, 0.95);
                 backdrop-filter: blur(10px);
                 overflow-x: auto;
                 -webkit-overflow-scrolling: touch;
+                justify-content: flex-start;
+                border-bottom: 1px solid var(--line);
+                /* 隐藏导航栏滚动条 */
+                scrollbar-width: none; 
+            }
+            .top-nav::-webkit-scrollbar {
+                display: none;
             }
             .top-nav a {
                 white-space: nowrap;
+                font-size: 0.75rem;
             }
         }
 
@@ -123,8 +131,8 @@
             flex-direction: column;
             justify-content: center;
             position: relative;
-            padding-top: 6rem; /* Make room for mobile nav */
-            padding-bottom: 3rem;
+            padding-top: 5rem; /* Make room for mobile nav */
+            padding-bottom: 2rem;
             
             /* 页面显现的渐变效果：结合 Intersection Observer 使用 */
             opacity: 0;
@@ -200,7 +208,7 @@
         
         .timeline-line {
             position: absolute;
-            left: 1.5rem; /* For mobile: 对应 pl-6 */
+            left: 1rem; /* For mobile: 更靠近边缘 */
             top: 0;
             bottom: 0;
             width: 1px;
@@ -343,21 +351,20 @@
 
     <!-- Header / Hero (V1 排版 + V2 颜色) -->
     <section id="home" class="section-full grid-line-bottom">
-        <div class="grid grid-cols-1 md:grid-cols-12 gap-8 w-full">
-            <div class="md:col-span-8 flex flex-col justify-center">
-                <div class="mb-6 text-xs font-mono tracking-[0.3em] uppercase opacity-50">PROFILE // 2026</div>
-                <h1 class="font-bold leading-[1.1] tracking-tighter mb-8 font-zh">
-                    <span class="text-3xl md:text-4xl opacity-70 font-light block mb-2">您好，我是</span>
-                    <span class="font-serif italic font-light text-6xl md:text-[7rem] block mt-4">陈于昕.</span>
+        <div class="grid grid-cols-1 md:grid-cols-12 gap-8 w-full h-full md:h-auto items-center">
+            <div class="md:col-span-8 flex flex-col justify-center order-2 md:order-1 pt-8 md:pt-0">
+                <div class="mb-4 md:mb-6 text-[10px] md:text-xs font-mono tracking-[0.3em] uppercase opacity-50">PROFILE // 2026</div>
+                <h1 class="font-bold leading-[1.1] tracking-tighter mb-6 md:mb-8 font-zh">
+                    <span class="text-2xl md:text-4xl opacity-70 font-light block mb-2">您好，我是</span>
+                    <span class="font-serif italic font-light text-5xl md:text-[7rem] block mt-2 md:mt-4">陈于昕.</span>
                 </h1>
-                <h2 class="text-xl md:text-2xl font-mono mb-8 opacity-60 tracking-wide uppercase">Spatial Thinker & Interaction Designer</h2>
-                <!-- 调整字体大小的类名在这里： text-sm (手机端偏小) md:text-base (电脑端正常偏小) -->
-                <p class="text-sm md:text-base max-w-2xl leading-relaxed opacity-80 font-light border-l border-[var(--text)] pl-6">
+                <h2 class="text-lg md:text-2xl font-mono mb-6 md:mb-8 opacity-60 tracking-wide uppercase">Spatial Thinker & Interaction Designer</h2>
+                <p class="text-xs md:text-base max-w-2xl leading-relaxed opacity-80 font-light border-l border-[var(--text)] pl-4 md:pl-6">
                     建筑学背景出身，能够将空间思维、用户体验洞察与系统化项目管理能力，迁移到产品与运营领域，能快速理解复杂业务并拆解为可执行方案；对前沿 AI 技术保持高度敏锐，拥有从 0 到 1 完成 AI 原生应用需求调研、设计、敏捷开发与业务闭环的能力，擅长将底层 AI 技术转化为极致的用户交互体验。
                 </p>
             </div>
-            <div class="md:col-span-4 h-[40vh] md:h-[60vh] mt-8 md:mt-0 relative flex items-end justify-end">
-                <div class="w-[80%] h-[90%] project-image bg-gray-200 aspect-[3/4]">
+            <div class="md:col-span-4 h-[35vh] md:h-[60vh] mt-4 md:mt-0 relative flex items-center md:items-end justify-center md:justify-end order-1 md:order-2">
+                <div class="w-[60%] md:w-[80%] h-full md:h-[90%] project-image bg-gray-200 aspect-[3/4] shadow-xl">
                     <img src="assets/images/profile.jpg" onerror="this.src='https://images.unsplash.com/photo-1503614472-8c93d56e92ce?q=80&w=1000&auto=format&fit=crop'" class="w-full h-full object-cover" alt="陈于昕的照片">
                 </div>
             </div>
@@ -371,12 +378,12 @@
 
     <!-- Experience Timeline (修复了重叠问题，独立内部滚动) -->
     <section id="journey" class="section-full grid-line-bottom">
-        <div class="grid md:grid-cols-12 gap-12 journey-container">
+        <div class="grid grid-cols-1 md:grid-cols-12 gap-8 md:gap-12 journey-container">
             <!-- Left: Sticky Title (居中对齐) -->
-            <div class="md:col-span-4 sticky-sidebar pr-8">
+            <div class="md:col-span-4 sticky-sidebar pr-0 md:pr-8 mb-8 md:mb-0">
                 <h2 class="text-xs tracking-[0.3em] uppercase mb-4 opacity-50">01 // Foundation</h2>
-                <h3 class="text-5xl md:text-6xl mb-6 font-bold font-zh">个人旅程</h3>
-                <p class="opacity-60 leading-relaxed text-lg font-light">从物理实体建筑到数字虚拟界面的跨界探索。向下滚动查看完整经历。</p>
+                <h3 class="text-4xl md:text-5xl md:text-6xl mb-4 md:mb-6 font-bold font-zh">个人旅程</h3>
+                <p class="opacity-60 leading-relaxed text-sm md:text-lg font-light">从物理实体建筑到数字虚拟界面的跨界探索。向下滚动查看完整经历。</p>
             </div>
             
             <!-- Right: Scrollable Timeline -->
@@ -444,14 +451,14 @@
     </section>
 
     <!-- Projects Section (Project 1 - 网页/大屏端) -->
-    <section id="works" class="section-full">
-        <div class="flex justify-between items-end mb-16 grid-line-bottom pb-8">
+    <section id="works" class="section-full pt-20 md:pt-32">
+        <div class="flex justify-between items-end mb-12 md:mb-16 grid-line-bottom pb-6 md:pb-8">
             <div>
-                <h2 class="text-xs tracking-[0.3em] uppercase mb-4 opacity-50">02 // The Archive</h2>
-                <h3 class="text-5xl md:text-6xl font-bold font-zh">精选作品</h3>
+                <h2 class="text-xs tracking-[0.3em] uppercase mb-2 md:mb-4 opacity-50">02 // The Archive</h2>
+                <h3 class="text-4xl md:text-5xl md:text-6xl font-bold font-zh">精选作品</h3>
             </div>
             <div class="text-right pb-2">
-                <span class="text-4xl font-light font-serif">1</span><span class="opacity-30">/4</span>
+                <span class="text-3xl md:text-4xl font-light font-serif">1</span><span class="opacity-30">/4</span>
             </div>
         </div>
         
@@ -472,13 +479,13 @@
     </section>
 
     <!-- Project 2 (网页/车机端) -->
-    <section class="section-full">
-        <div class="flex justify-between items-end mb-16 grid-line-bottom pb-8">
+    <section class="section-full pt-12 md:pt-32">
+        <div class="flex justify-between items-end mb-12 md:mb-16 grid-line-bottom pb-6 md:pb-8">
             <div>
-                <h3 class="text-5xl md:text-6xl font-bold font-zh opacity-0">精选作品</h3>
+                <h3 class="text-4xl md:text-5xl md:text-6xl font-bold font-zh opacity-0">精选作品</h3>
             </div>
             <div class="text-right pb-2">
-                <span class="text-4xl font-light font-serif">2</span><span class="opacity-30">/4</span>
+                <span class="text-3xl md:text-4xl font-light font-serif">2</span><span class="opacity-30">/4</span>
             </div>
         </div>
 
@@ -499,13 +506,13 @@
     </section>
 
     <!-- Project 3 (移动端 App) -->
-    <section class="section-full">
-        <div class="flex justify-between items-end mb-16 grid-line-bottom pb-8">
+    <section class="section-full pt-12 md:pt-32">
+        <div class="flex justify-between items-end mb-12 md:mb-16 grid-line-bottom pb-6 md:pb-8">
             <div>
-                <h3 class="text-5xl md:text-6xl font-bold font-zh opacity-0">精选作品</h3>
+                <h3 class="text-4xl md:text-5xl md:text-6xl font-bold font-zh opacity-0">精选作品</h3>
             </div>
             <div class="text-right pb-2">
-                <span class="text-4xl font-light font-serif">3</span><span class="opacity-30">/4</span>
+                <span class="text-3xl md:text-4xl font-light font-serif">3</span><span class="opacity-30">/4</span>
             </div>
         </div>
 
@@ -526,13 +533,13 @@
     </section>
 
     <!-- Project 4 (移动端 App) -->
-    <section class="section-full">
-        <div class="flex justify-between items-end mb-16 grid-line-bottom pb-8">
+    <section class="section-full pt-12 md:pt-32">
+        <div class="flex justify-between items-end mb-12 md:mb-16 grid-line-bottom pb-6 md:pb-8">
             <div>
-                <h3 class="text-5xl md:text-6xl font-bold font-zh opacity-0">精选作品</h3>
+                <h3 class="text-4xl md:text-5xl md:text-6xl font-bold font-zh opacity-0">精选作品</h3>
             </div>
             <div class="text-right pb-2">
-                <span class="text-4xl font-light font-serif">4</span><span class="opacity-30">/4</span>
+                <span class="text-3xl md:text-4xl font-light font-serif">4</span><span class="opacity-30">/4</span>
             </div>
         </div>
 
@@ -553,7 +560,7 @@
     </section>
 
     <!-- Awards Section (New) -->
-    <section id="awards" class="section-full grid-line-top justify-center">
+    <section id="awards" class="section-full grid-line-top justify-center pt-20 md:pt-12">
         <div class="grid grid-cols-1 md:grid-cols-12 gap-8 md:gap-16 items-start md:h-full pt-12">
             <!-- 左侧：奖项标题与列表 (加宽至 col-span-5，允许滑动) -->
             <div class="md:col-span-5 h-[40vh] md:h-[80vh] overflow-y-auto no-scrollbar pr-4 pb-8 md:pb-32">
@@ -681,7 +688,7 @@
     </section>
 
     <!-- Social Media / Xiaohongshu (New Section) -->
-    <section id="media" class="section-full grid-line-top justify-center">
+    <section id="media" class="section-full grid-line-top justify-center pt-20 md:pt-12">
         <div class="flex justify-between items-end mb-8 md:mb-12 grid-line-bottom pb-6">
             <div>
                 <h2 class="text-xs tracking-[0.3em] uppercase mb-2 opacity-50">04 // Social Media</h2>
@@ -769,7 +776,7 @@
     </section>
 
     <!-- About & Footer -->
-    <section id="about" class="section-full grid-line-top justify-center pb-40 md:pb-0">
+    <section id="about" class="section-full grid-line-top justify-center pb-40 md:pb-0 pt-20 md:pt-12">
         <div class="grid grid-cols-1 md:grid-cols-2 gap-12 md:gap-16 items-center">
             <div class="pr-0 md:pr-12">
                 <h2 class="text-xs tracking-[0.3em] uppercase mb-4 md:mb-6 opacity-50">05 // Beyond Boundaries</h2>

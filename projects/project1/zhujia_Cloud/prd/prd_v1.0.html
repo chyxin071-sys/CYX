@@ -201,8 +201,8 @@
             position: relative;
         }
 
-        /* Use the same mockup style as feature blocks for consistency, but scale it */
-                .drawer-mockup {
+        /* 手机原型切片容器 - 动态缩放 */
+        .drawer-mockup {
             position: relative;
             width: 318.75px; 
             height: 690.2px; 
@@ -210,14 +210,15 @@
             flex-shrink: 0;
             border-radius: 34px; 
             box-shadow: 0 20px 40px rgba(0,0,0,0.15); 
-            /* overflow: hidden; */ /* 移除，以允许右下角的刷新按钮显示出来 */
+            /* 手机端通过 CSS 变量或 calc() 自动缩放 */
+            transform-origin: center center;
         }
 
         .drawer-mockup .iphone-notch {
             display: none; /* 原型已自带，这里不重复绘制 */
         }
 
-        .drawer-mockup         .iphone-screen {
+        .drawer-mockup .iphone-screen {
             position: absolute;
             top: 0;
             left: 0;
@@ -229,13 +230,13 @@
             z-index: 1; /* 确保它在前面 */
         }
 
-                .drawer-mockup iframe {
+        .drawer-mockup iframe {
             position: absolute;
             top: 0;
             left: 0;
             width: 375px;
             height: 812px;
-            transform: scale(0.85);
+            transform: scale(0.85); /* 内部 iframe 固定缩放以匹配外壳 */
             transform-origin: 0 0;
             border: none;
             padding-top: 0;
@@ -281,7 +282,43 @@
         /* .sidebar-toggle { ... } */
         /* .close-preview-btn { ... } */
 
-        /* 导航栏基础样式 */
+        /* Mobile Responsiveness for Cloud PRD */
+        @media (max-width: 768px) {
+            .side-tab {
+                display: none; /* 手机端隐藏侧边抽屉按钮 */
+            }
+            .layout-container {
+                flex-direction: column;
+            }
+            .sidebar {
+                width: 100% !important;
+                height: auto;
+                max-height: 40vh;
+                position: relative;
+                opacity: 1;
+                border-right: none;
+                border-bottom: 1px solid var(--border);
+            }
+            .prototype-drawer, .prototype-drawer-content {
+                display: none !important; /* 手机端不显示固定的右侧原型抽屉 */
+            }
+            .doc-panel {
+                padding: 24px 20px 80px;
+                max-width: 100%;
+            }
+            /* 手机端表格横向滚动 */
+            .table-container {
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+                margin-bottom: 24px;
+            }
+            table { min-width: 600px; } /* 确保表格不会过度挤压 */
+            
+            /* 调整正文中嵌入的手机原型缩放 */
+            .feature-block .drawer-mockup {
+                transform: scale(min(0.8, calc((100vw - 40px) / 320)));
+            }
+        }
         .nav-section { 
             padding: 0; 
             margin-bottom: 0; /* 消除默认间距 */

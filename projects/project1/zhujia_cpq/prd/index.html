@@ -191,7 +191,35 @@
             color: #52525b !important; 
         }
         
-        /* 表格优化 - 现代化数据展示 */
+        /* Mobile Responsiveness for PRD */
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%); /* 手机端默认收起侧边栏 */
+            }
+            .sidebar.mobile-open {
+                transform: translateX(0);
+            }
+            .main-content {
+                margin-left: 0;
+                padding: 24px 20px 80px;
+            }
+            #toggle-sidebar {
+                bottom: 16px;
+                left: 16px;
+            }
+            .markdown-body h1 { font-size: 32px !important; }
+            .markdown-body h2 { font-size: 24px !important; margin-top: 60px !important; }
+            .markdown-body h3 { font-size: 20px !important; padding-left: 16px !important; }
+            
+            /* 手机端表格允许横向滚动 */
+            .table-container {
+                width: 100%;
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+                margin-bottom: 32px;
+            }
+            .table-custom { margin: 0; }
+        }
         .table-custom { 
             width: 100%; 
             border-collapse: separate; 
@@ -283,7 +311,8 @@
             background: #fff;
             overflow: hidden; /* 确保内部 iframe 不会溢出圆角 */
             position: relative; /* 为内部绝对定位提供参考 */
-            transform: scale(0.8); /* 缩小比例，确保完整显示且不超出 */
+            /* 响应式缩放 */
+            transform: scale(min(0.8, calc((100vw - 40px) / 375))); 
             transform-origin: center center;
             /* 隐藏容器本身的滚动条 */
             -ms-overflow-style: none;  /* IE and Edge */
@@ -306,12 +335,21 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            height: 100%;
-            min-height: 800px; /* 增加最小高度确保能装下缩放后的手机 */
+            width: 100%;
+            height: calc(812px * min(0.8, calc((100vw - 40px) / 375))); /* 动态计算高度以防重叠 */
+            min-height: auto; 
             background-color: #fafafa;
             border-radius: 0 0 12px 0;
             overflow: hidden; /* 防止溢出 */
-            padding: 24px;
+            padding: 0;
+        }
+        
+        @media (min-width: 768px) {
+            .iframe-wrapper {
+                min-height: 800px;
+                padding: 24px;
+                height: 100%;
+            }
         }
         
         /* 列表优化 */

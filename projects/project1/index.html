@@ -129,6 +129,22 @@
             margin: 0 auto;
         }
 
+        @media (max-width: 768px) {
+            .hero-title {
+                font-size: 2.5rem;
+            }
+            .logic-section {
+                padding: 4rem 1.5rem;
+            }
+            .card-container {
+                grid-template-columns: 1fr; /* 手机端改为垂直单列排列 */
+                gap: 1.5rem;
+            }
+            .hero-circle {
+                display: none;
+            }
+        }
+
         .logic-card {
             background: white;
             border: 1px solid var(--card-border);
